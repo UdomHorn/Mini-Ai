@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini-Ai-Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/vendor/highlight/styles/github.min.css" id="hljs-light-theme" />
+    <link rel="stylesheet" href="/vendor/highlight/styles/github-dark.min.css" id="hljs-dark-theme" disabled />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">AI Chat</p>
+          <h1>Mini-Ai-Assistant</h1>
+        </div>
+        <div class="header-actions">
+          <button id="clear-chat" class="ghost-button" type="button">Clear Chat</button>
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">
+            <span class="theme-toggle-track">
+              <span class="theme-toggle-thumb"></span>
+            </span>
+            <span id="theme-label">Dark Mode</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="chat-layout">
+        <section id="chat-container" class="chat-container" aria-live="polite"></section>
+      </main>
+
+      <form id="chat-form" class="chat-form">
+        <label class="sr-only" for="prompt-input">Ask Mini-Ai-Assistant</label>
+        <textarea
+          id="prompt-input"
+          name="prompt"
+          rows="1"
+          maxlength="6000"
+          placeholder="Ask Mini-Ai-Assistant..."
+        ></textarea>
+        <button id="submit-button" type="submit">Send</button>
+      </form>
+    </div>
+
+    <template id="empty-state-template">
+      <div class="empty-state">
+        <p class="empty-state-kicker">Start Chat</p>
+        <h2>Talk to Mini-Ai-Assistant.</h2>
+      </div>
+    </template>
+
+    <script src="/vendor/marked/marked.umd.js"></script>
+    <script src="/vendor/highlight/highlight.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

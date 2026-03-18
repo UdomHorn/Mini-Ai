@@ -1,0 +1,23 @@
+{
+  "name": "ai-project",
+  "version": "1.0.0",
+  "description": "Lightweight Gemini-powered AI chat web app",
+  "main": "backend/server.js",
+  "scripts": {
+    "dev": "node backend/server.js",
+    "start": "node backend/server.js",
+    "verify": "node backend/verify.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^1.46.0",
+    "@highlightjs/cdn-assets": "^11.11.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "highlight.js": "^11.11.1",
+    "marked": "^17.0.4"
+  }
+}
