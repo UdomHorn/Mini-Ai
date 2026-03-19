@@ -25,6 +25,10 @@ app.use(
 );
 app.use(express.static(path.join(__dirname, "..", "frontend")));
 
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.post("/api/chat", async (req, res) => {
   const prompt = typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "";
 
