@@ -78,20 +78,59 @@ function scrollLatestAssistantToTop() {
 
 function attachCopyBehavior(button, text) {
   button.addEventListener("click", async () => {
+    const defaultLabel = button.dataset.label || "Copy";
+    const copiedLabel = button.dataset.copiedLabel || "Copied!";
+    const failedLabel = button.dataset.failedLabel || "Copy failed";
+
     try {
       await navigator.clipboard.writeText(text);
-      button.textContent = "Copied!";
+      button.textContent = copiedLabel;
       button.classList.add("copied");
       window.setTimeout(() => {
-        button.textContent = "Copy";
+        button.textContent = defaultLabel;
         button.classList.remove("copied");
       }, 1600);
     } catch (error) {
-      button.textContent = "Copy failed";
+      button.textContent = failedLabel;
       window.setTimeout(() => {
-        button.textContent = "Copy";
+        button.textContent = defaultLabel;
       }, 1600);
     }
+  });
+}
+
+function enhanceCodeBlocks(container) {
+  container.querySelectorAll("pre").forEach((pre) => {
+    const code = pre.querySelector("code");
+
+    if (!code) {
+      return;
+    }
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "code-block";
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "code-block-toolbar";
+
+    const languageLabel = document.createElement("span");
+    languageLabel.className = "code-block-language";
+
+    const languageClass = [...code.classList].find((name) => name.startsWith("language-"));
+    languageLabel.textContent = languageClass ? languageClass.replace("language-", "") : "code";
+
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "copy-button code-copy-button";
+    copyButton.textContent = "Copy code";
+    copyButton.dataset.label = "Copy code";
+    copyButton.dataset.copiedLabel = "Copied!";
+    copyButton.dataset.failedLabel = "Copy failed";
+    attachCopyBehavior(copyButton, code.textContent || "");
+
+    toolbar.append(languageLabel, copyButton);
+    pre.replaceWith(wrapper);
+    wrapper.append(toolbar, pre);
   });
 }
 
@@ -114,7 +153,10 @@ function createMessageElement(message) {
     const copyButton = document.createElement("button");
     copyButton.type = "button";
     copyButton.className = "copy-button";
-    copyButton.textContent = "Copy";
+    copyButton.textContent = "Copy reply";
+    copyButton.dataset.label = "Copy reply";
+    copyButton.dataset.copiedLabel = "Copied!";
+    copyButton.dataset.failedLabel = "Copy failed";
     attachCopyBehavior(copyButton, message.content);
     meta.appendChild(copyButton);
   }
@@ -124,6 +166,7 @@ function createMessageElement(message) {
 
   if (message.role === "assistant") {
     content.innerHTML = marked.parse(message.content);
+    enhanceCodeBlocks(content);
     content.querySelectorAll("pre code").forEach((block) => {
       highlightCode(block);
     });
