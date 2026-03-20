@@ -9,6 +9,7 @@ dotenv.config();
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const apiKey = process.env.GEMINI_API_KEY;
+const frontendDistPath = path.join(__dirname, "..", "frontend", "dist");
 
 let ai = null;
 
@@ -23,7 +24,7 @@ app.use(
   "/vendor/highlight",
   express.static(path.join(__dirname, "..", "node_modules", "@highlightjs", "cdn-assets"))
 );
-app.use(express.static(path.join(__dirname, "..", "frontend")));
+app.use(express.static(frontendDistPath));
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
@@ -70,7 +71,7 @@ app.use((req, res, next) => {
     return next();
   }
 
-  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
+  res.sendFile(path.join(frontendDistPath, "index.html"));
 });
 
 app.use((req, res) => {

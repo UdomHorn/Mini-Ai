@@ -4,6 +4,8 @@
   "description": "Lightweight Gemini-powered AI chat web app",
   "main": "backend/server.js",
   "scripts": {
+    "build": "vite build --config vite.config.mjs",
+    "dev:client": "vite --config vite.config.mjs",
     "dev": "node backend/server.js",
     "start": "node backend/server.js",
     "verify": "node backend/verify.js"
@@ -14,10 +16,16 @@
   "dependencies": {
     "@google/genai": "^1.46.0",
     "@highlightjs/cdn-assets": "^11.11.1",
+    "@tailwindcss/vite": "^4.2.2",
+    "@vitejs/plugin-react": "^6.0.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "highlight.js": "^11.11.1",
-    "marked": "^17.0.4"
+    "marked": "^17.0.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tailwindcss": "^4.2.2",
+    "vite": "^8.0.1"
   }
 }
