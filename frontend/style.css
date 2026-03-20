@@ -296,6 +296,18 @@ body.dark .search-input-wrap {
 
 body.dark .category-filter {
   background: rgba(255, 255, 255, 0.04);
+  color: #ebf2ff;
+  border-color: rgba(148, 163, 184, 0.32);
+}
+
+.category-filter option {
+  color: #25170a;
+  background: #fcf7f0;
+}
+
+body.dark .category-filter option {
+  color: #ebf2ff;
+  background: #0f172a;
 }
 
 #language-search::placeholder,
@@ -344,6 +356,12 @@ body.dark .category-filter {
 .detail-panel {
   padding: 26px;
   border-radius: 32px;
+}
+
+.detail-panel {
+  position: sticky;
+  top: 20px;
+  align-self: start;
 }
 
 .section-heading {

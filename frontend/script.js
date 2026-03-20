@@ -23,7 +23,7 @@ const closeChatButton = document.getElementById("close-chat");
 
 const messages = [];
 const STORAGE_KEY = "mini-ai-assistant-theme";
-const DEFAULT_PROMPT_PLACEHOLDER = "Type your question here...";
+const DEFAULT_PROMPT_PLACEHOLDER = "Ask for prompts, features, debugging, or next steps...";
 let isLoading = false;
 let selectedLanguageId = "javascript";
 let activeLanguageId = "javascript";
@@ -723,7 +723,7 @@ function promptForLanguage(languageId) {
     return "";
   }
 
-  return `I want to learn ${language.title}. Give me a beginner-friendly study plan, key concepts, and a small practice project.`;
+  return `Help me vibe code with ${language.title}. Give me a strong prompt, a build plan, and the first feature I should create.`;
 }
 
 async function handleSubmit(event) {
