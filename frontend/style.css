@@ -69,9 +69,9 @@ body::before {
 }
 
 .app-shell {
-  width: min(1080px, calc(100% - 32px));
+  width: min(1440px, calc(100% - 24px));
   margin: 0 auto;
-  padding: 24px 0 32px;
+  padding: 16px 0 20px;
 }
 
 .app-header,
@@ -134,6 +134,37 @@ h2 {
   background: rgba(127, 127, 127, 0.12);
 }
 
+.history-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-button-icon {
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: inherit;
+}
+
+.history-count {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff7ed;
+  background: linear-gradient(135deg, #b91c1c, #9f1239);
+}
+
+body.dark .history-count {
+  color: #fff7ed;
+  background: linear-gradient(135deg, #dc2626, #be123c);
+}
+
 .ghost-button:hover,
 #submit-button:hover,
 .copy-button:hover,
@@ -176,14 +207,121 @@ body.dark .theme-toggle-thumb {
 
 .chat-layout {
   margin-top: 20px;
+  position: relative;
 }
 
 .chat-container {
-  min-height: 62vh;
-  max-height: 62vh;
+  min-height: 74vh;
+  max-height: 74vh;
   overflow-y: auto;
-  padding: 24px;
+  padding: 88px 24px 24px;
   border-radius: 30px;
+}
+
+.quick-actions {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 2;
+  transition: opacity 180ms ease;
+}
+
+.clear-chat-floating {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+}
+
+.quick-actions.scroll-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.quick-actions-toggle,
+.quick-action-button {
+  border: none;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, opacity 160ms ease;
+}
+
+.quick-actions-toggle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff7ed;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  box-shadow: 0 14px 34px rgba(159, 67, 24, 0.28);
+}
+
+.quick-actions-plus {
+  display: inline-block;
+  font-size: 1.8rem;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+
+.quick-actions-toggle[aria-expanded="true"] .quick-actions-plus {
+  transform: rotate(135deg);
+}
+
+.quick-actions-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.quick-actions-menu.hidden {
+  display: none;
+}
+
+.quick-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  font: inherit;
+  color: var(--text);
+  background: #ffffff;
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+}
+
+body.dark .quick-action-button {
+  background: rgba(255, 255, 255, 0.96);
+  color: #1f2937;
+}
+
+.quick-action-button.active {
+  color: #fff7ed;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  border-color: transparent;
+}
+
+.quick-action-button.active .quick-action-icon {
+  background: rgba(255, 247, 237, 0.18);
+}
+
+.quick-action-button:hover,
+.quick-actions-toggle:hover {
+  transform: translateY(-1px);
+}
+
+.quick-action-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(127, 127, 127, 0.12);
 }
 
 .chat-stack {
@@ -345,13 +483,209 @@ body.dark .theme-toggle-thumb {
 
 .chat-form {
   position: sticky;
-  bottom: 16px;
+  bottom: 8px;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 14px;
-  margin-top: 20px;
+  margin-top: 12px;
   padding: 16px;
   border-radius: 28px;
+}
+
+.language-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 24, 39, 0.32);
+  backdrop-filter: blur(8px);
+}
+
+.language-picker-overlay.hidden {
+  display: none;
+}
+
+.history-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 24, 39, 0.32);
+  backdrop-filter: blur(8px);
+}
+
+.history-overlay.hidden {
+  display: none;
+}
+
+.language-picker {
+  width: min(760px, 100%);
+  padding: 24px;
+  border-radius: 28px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+}
+
+.history-panel {
+  width: min(760px, 100%);
+  max-height: min(88vh, 820px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 28px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+}
+
+.language-picker-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.history-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.language-picker-copy {
+  margin: 14px 0 0;
+  color: var(--muted);
+}
+
+.history-copy {
+  margin: 14px 0 0;
+  color: var(--muted);
+}
+
+.language-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.language-choice-button {
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 14px 12px;
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition: transform 140ms ease, background-color 140ms ease;
+}
+
+body.dark .language-choice-button {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.language-choice-button:hover {
+  transform: translateY(-1px);
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  overflow: visible;
+}
+
+.history-item {
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--panel-border);
+  overflow: hidden;
+}
+
+body.dark .history-item {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.history-item-toggle {
+  width: 100%;
+  padding: 16px 18px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-item-title {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.history-item-chevron {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.history-item-detail {
+  padding: 0 18px 18px;
+}
+
+.history-item-detail.hidden {
+  display: none;
+}
+
+.history-item-text {
+  margin: 0;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.history-item-meta {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.history-section-label {
+  margin: 14px 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.history-answer {
+  color: var(--text);
+  white-space: normal;
+  overflow: visible;
+}
+
+.history-answer > :first-child {
+  margin-top: 0;
+}
+
+.history-answer > :last-child {
+  margin-bottom: 0;
 }
 
 #prompt-input {
@@ -413,8 +747,8 @@ body.dark .theme-toggle-thumb {
 
 @media (max-width: 720px) {
   .app-shell {
-    width: min(100% - 16px, 1080px);
-    padding-top: 16px;
+    width: min(100% - 12px, 1440px);
+    padding-top: 12px;
   }
 
   .app-header {
@@ -428,13 +762,36 @@ body.dark .theme-toggle-thumb {
   }
 
   .chat-container {
-    min-height: 58vh;
-    max-height: 58vh;
-    padding: 18px;
+    min-height: 72vh;
+    max-height: 72vh;
+    padding: 82px 18px 18px;
+  }
+
+  .chat-layout {
+    position: relative;
+  }
+
+  .quick-actions {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+  }
+
+  .clear-chat-floating {
+    top: 12px;
+    right: 12px;
   }
 
   .chat-form {
     grid-template-columns: 1fr;
+  }
+
+  .language-picker {
+    padding: 18px;
+  }
+
+  .language-picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   #submit-button {
