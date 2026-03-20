@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini-Ai-Assistant</title>
+    <title>CodeQuest Learning Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Sans:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/vendor/highlight/styles/github.min.css" id="hljs-light-theme" />
@@ -17,12 +17,15 @@
   <body>
     <div class="app-shell">
       <header class="app-header">
-        <div>
-          <p class="eyebrow">AI Chat</p>
-          <h1>Mini-Ai-Assistant</h1>
+        <div class="header-copy">
+          <p class="eyebrow">Coding Learning Platform</p>
+          <h1>Learn any programming language with guided paths and AI help.</h1>
+          <p class="header-description">
+            Search for a language, read the core skills you need, and open the AI tutor only when
+            you want extra help.
+          </p>
         </div>
         <div class="header-actions">
-          <button id="clear-chat" class="ghost-button" type="button">Clear Chat</button>
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">
             <span class="theme-toggle-track">
               <span class="theme-toggle-thumb"></span>
@@ -31,6 +34,95 @@
           </button>
         </div>
       </header>
+
+      <main class="learning-layout">
+        <section class="hero-panel">
+          <div class="hero-copy">
+            <p class="eyebrow">Learning Guidance</p>
+            <h2>Pick a language and follow a practical roadmap.</h2>
+            <p>
+              Browse popular frontend, backend, mobile, systems, data, and scripting languages in
+              one place. Each language includes a quick overview, key topics, and a clear next step.
+            </p>
+          </div>
+          <form class="search-panel" role="search">
+            <label class="search-label" for="language-search">Search a coding language</label>
+            <div class="search-controls">
+              <div class="search-input-wrap">
+                <input
+                  id="language-search"
+                  type="search"
+                  placeholder="Search by language name, like JavaScript or Python"
+                  autocomplete="off"
+                />
+              </div>
+              <label class="sr-only" for="category-filter">Filter by category</label>
+              <select id="category-filter" class="category-filter">
+                <option value="all">All categories</option>
+              </select>
+            </div>
+            <span class="search-hint" id="results-count">0 languages</span>
+          </form>
+        </section>
+
+        <section class="content-grid">
+          <section class="catalog-panel">
+            <div class="section-heading">
+              <p class="eyebrow">Language Library</p>
+              <h2>Explore programming languages</h2>
+            </div>
+            <div id="language-grid" class="language-grid"></div>
+          </section>
+
+          <aside class="detail-panel">
+            <div class="section-heading">
+              <p class="eyebrow">Selected Path</p>
+              <h2 id="detail-title">Choose a language to begin</h2>
+            </div>
+            <p id="detail-summary" class="detail-summary">
+              Select any language card to see what it is used for, the skills you should learn
+              first, and a starter project idea.
+            </p>
+
+            <div class="detail-block">
+              <h3>What you will learn</h3>
+              <ul id="detail-topics" class="detail-list"></ul>
+            </div>
+
+            <div class="detail-block">
+              <h3>Learning path</h3>
+              <ol id="detail-steps" class="detail-list ordered"></ol>
+            </div>
+
+            <div class="detail-block">
+              <h3>Starter project</h3>
+              <p id="detail-project" class="detail-project"></p>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <button
+      id="chat-toggle"
+      class="chat-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="chat-popup"
+    >
+      AI Tutor
+    </button>
+
+    <section id="chat-popup" class="chat-popup hidden" aria-label="AI tutor">
+      <div class="chat-popup-header">
+        <div>
+          <p class="eyebrow">AI Chat</p>
+          <h2>Mini-Ai-Assistant</h2>
+        </div>
+        <div class="chat-popup-actions">
+          <button id="close-chat" class="ghost-button small-button" type="button">Close</button>
+        </div>
+      </div>
 
       <main class="chat-layout">
         <section id="chat-container" class="chat-container" aria-live="polite"></section>
@@ -43,16 +135,16 @@
           name="prompt"
           rows="1"
           maxlength="6000"
-          placeholder="Ask Mini-Ai-Assistant..."
+          placeholder="Type your question here..."
         ></textarea>
         <button id="submit-button" type="submit">Send</button>
       </form>
-    </div>
+    </section>
 
     <template id="empty-state-template">
       <div class="empty-state">
-        <p class="empty-state-kicker">Start Chat</p>
-        <h2>Talk to Mini-Ai-Assistant.</h2>
+        <p class="empty-state-kicker">AI Tutor</p>
+        <h2>Open a language path, then ask for help here.</h2>
       </div>
     </template>
 
