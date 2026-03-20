@@ -310,6 +310,17 @@ body.dark .quick-action-button {
   background: rgba(255, 247, 237, 0.18);
 }
 
+/* In dark mode, keep the active button theme consistent with light mode. */
+body.dark .quick-action-button.active {
+  background: linear-gradient(135deg, #bf5a2a, #9f4318);
+  color: #fff7ed;
+  border-color: transparent;
+}
+
+body.dark .quick-action-button.active .quick-action-icon {
+  background: rgba(191, 90, 42, 0.26);
+}
+
 .quick-action-button:hover,
 .quick-actions-toggle:hover {
   transform: translateY(-1px);
