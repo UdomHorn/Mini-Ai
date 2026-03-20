@@ -19,10 +19,13 @@
       <header class="app-header">
         <div>
           <p class="eyebrow">AI Chat</p>
-          <h1>Mini-Ai-Assistant</h1>
+          <h1 id="chat-title">Talk To Mini AI</h1>
         </div>
         <div class="header-actions">
-          <button id="clear-chat" class="ghost-button" type="button">Clear Chat</button>
+          <button id="history-toggle" class="ghost-button history-button" type="button" aria-label="Open history">
+            <span class="history-button-icon" aria-hidden="true">History</span>
+            <span id="history-count" class="history-count">0</span>
+          </button>
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">
             <span class="theme-toggle-track">
               <span class="theme-toggle-thumb"></span>
@@ -33,20 +36,75 @@
       </header>
 
       <main class="chat-layout">
+        <div class="quick-actions">
+          <button
+            id="quick-actions-toggle"
+            class="quick-actions-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="quick-actions-menu"
+            aria-label="Open quick actions"
+          >
+            <span class="quick-actions-plus">+</span>
+          </button>
+          <div id="quick-actions-menu" class="quick-actions-menu hidden">
+            <button class="quick-action-button active" type="button" data-prompt="Talk to Mini AI about my coding idea and help me plan the next steps.">
+              <span class="quick-action-icon" aria-hidden="true">Talk</span>
+              <span>Talk To Mini AI</span>
+            </button>
+            <button class="quick-action-button" type="button" data-prompt="Explain this code clearly, step by step, and tell me what each part does.">
+              <span class="quick-action-icon" aria-hidden="true">?</span>
+              <span>Explain Code</span>
+            </button>
+            <button class="quick-action-button" type="button" data-prompt="Generate code for my feature and include a short explanation of how it works.">
+              <span class="quick-action-icon" aria-hidden="true">{ }</span>
+              <span>Code Generator</span>
+            </button>
+          </div>
+        </div>
+        <button id="clear-chat" class="ghost-button clear-chat-floating" type="button">Clear Chat</button>
         <section id="chat-container" class="chat-container" aria-live="polite"></section>
       </main>
 
       <form id="chat-form" class="chat-form">
-        <label class="sr-only" for="prompt-input">Ask Mini-Ai-Assistant</label>
+        <label class="sr-only" for="prompt-input">Ask Talk To Mini AI</label>
         <textarea
           id="prompt-input"
           name="prompt"
           rows="1"
           maxlength="6000"
-          placeholder="Ask Mini-Ai-Assistant..."
+          placeholder="Ask Talk To Mini AI..."
         ></textarea>
         <button id="submit-button" type="submit">Send</button>
       </form>
+
+      <div id="language-picker-overlay" class="language-picker-overlay hidden" aria-hidden="true">
+        <div class="language-picker" role="dialog" aria-modal="true" aria-labelledby="language-picker-title">
+          <div class="language-picker-header">
+            <div>
+              <p class="eyebrow">Code Generator</p>
+              <h2 id="language-picker-title">Choose A Language</h2>
+            </div>
+            <button id="close-language-picker" class="ghost-button" type="button">Close</button>
+          </div>
+          <p class="language-picker-copy">Pick the language you want Mini AI Assistant to generate for your prompt.</p>
+          <div id="language-picker-grid" class="language-picker-grid"></div>
+        </div>
+      </div>
+
+      <div id="history-overlay" class="history-overlay hidden" aria-hidden="true">
+        <aside class="history-panel" role="dialog" aria-modal="true" aria-labelledby="history-title">
+          <div class="history-panel-header">
+            <div>
+              <p class="eyebrow">Local History</p>
+              <h2 id="history-title">Conversation History</h2>
+            </div>
+            <button id="close-history" class="ghost-button" type="button">Close</button>
+          </div>
+          <p class="history-copy">Your questions and AI answers are stored in this browser on your local machine.</p>
+          <div id="history-list" class="history-list"></div>
+        </aside>
+      </div>
     </div>
 
     <template id="empty-state-template">
