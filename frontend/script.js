@@ -24,7 +24,7 @@ const historyList = document.getElementById("history-list");
 const messages = [];
 const STORAGE_KEY = "mini-ai-assistant-theme";
 const HISTORY_STORAGE_KEY = "mini-ai-assistant-user-history";
-const QUICK_ACTION_TALK = "Talk To Mini AI";
+const QUICK_ACTION_TALK = "Talk to AI";
 const QUICK_ACTION_EXPLAIN = "Explain Code";
 const QUICK_ACTION_GENERATOR = "Code Generator";
 const CODE_LANGUAGES = [
@@ -189,7 +189,7 @@ function createMessageElement(message) {
 
   const role = document.createElement("span");
   role.className = "message-role";
-  role.textContent = message.role === "user" ? "You" : "Mini-Ai-Assistant";
+  role.textContent = message.role === "user" ? "You" : "Mini AI Assistant";
   meta.appendChild(role);
 
   if (message.role === "assistant" && !message.pending) {
@@ -416,7 +416,7 @@ function getQuickActionTitle(actionLabel) {
     return "Generate Project Code";
   }
 
-  return "Talk To Mini AI";
+  return "Talk to AI";
 }
 
 function getQuickActionPlaceholder(actionLabel) {

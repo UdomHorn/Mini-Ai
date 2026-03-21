@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini-Ai-Assistant</title>
+    <title>Talk to AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,8 +18,8 @@
     <div class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">AI Chat</p>
-          <h1 id="chat-title">Talk To Mini AI</h1>
+          <p class="eyebrow">Mini AI Assistant</p>
+          <h1 id="chat-title">Talk to AI</h1>
         </div>
         <div class="header-actions">
           <button id="history-toggle" class="ghost-button history-button" type="button" aria-label="Open history">
@@ -48,17 +48,13 @@
             <span class="quick-actions-plus">+</span>
           </button>
           <div id="quick-actions-menu" class="quick-actions-menu hidden">
-            <button class="quick-action-button active" type="button" data-prompt="Talk to Mini AI about my coding idea and help me plan the next steps.">
+            <button class="quick-action-button active" type="button" data-prompt="Help me learn coding for my idea and guide the next steps.">
               <span class="quick-action-icon" aria-hidden="true">Talk</span>
-              <span>Talk To Mini AI</span>
+              <span>Talk to AI</span>
             </button>
             <button class="quick-action-button" type="button" data-prompt="Explain this code clearly, step by step, and tell me what each part does.">
               <span class="quick-action-icon" aria-hidden="true">?</span>
               <span>Explain Code</span>
-            </button>
-            <button class="quick-action-button" type="button" data-prompt="Generate code for my feature and include a short explanation of how it works.">
-              <span class="quick-action-icon" aria-hidden="true">{ }</span>
-              <span>Code Generator</span>
             </button>
           </div>
         </div>
@@ -67,13 +63,13 @@
       </main>
 
       <form id="chat-form" class="chat-form">
-        <label class="sr-only" for="prompt-input">Ask Talk To Mini AI</label>
+        <label class="sr-only" for="prompt-input">Ask Learn Coding With AI</label>
         <textarea
           id="prompt-input"
           name="prompt"
           rows="1"
           maxlength="6000"
-          placeholder="Ask Talk To Mini AI..."
+          placeholder="Ask Learn Coding With AI..."
         ></textarea>
         <button id="submit-button" type="submit">Send</button>
       </form>
@@ -110,7 +106,7 @@
     <template id="empty-state-template">
       <div class="empty-state">
         <p class="empty-state-kicker">Start Chat</p>
-        <h2>Talk to Mini-Ai-Assistant.</h2>
+        <h2>Learn Coding With AI.</h2>
       </div>
     </template>
 
