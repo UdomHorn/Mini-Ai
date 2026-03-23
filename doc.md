@@ -123,3 +123,15 @@
 
 59. select all promt I use and make a doc.md file and pase all promt inside
 
+60. now make few more button , "Optimize code", "Refactor code", "Convert Language" and give codition to each button to ensure function and codition match the purpose. for Convert Language button when user click let ask them to pick whick button they want to convert (e.g., Python -> JavaScript)
+
+61. make a back buton to make user choose languge again if they chose worng language.
+
+62. in target language only show the target laguage dont show the  surce language ->
+
+63. change the Word Learn Coding With AI. To Learn Coding With Mini AI Assistant and the title of the project form Talk to Ai to Mini AI Assistant
+
+64. are some code can converted to? . example html can convert to css? if some language are cannot converted to when choose the  first language and don't show the language and cannot convert to and surce language also if the surce language cannot converte to other language remove some surce language button.
+
+65. save all the prompt that I used to asked in doc.md
+

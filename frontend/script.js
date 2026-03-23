@@ -15,6 +15,11 @@ const quickActionsMenu = document.getElementById("quick-actions-menu");
 const languagePickerOverlay = document.getElementById("language-picker-overlay");
 const closeLanguagePickerButton = document.getElementById("close-language-picker");
 const languagePickerGrid = document.getElementById("language-picker-grid");
+const conversionPickerOverlay = document.getElementById("conversion-picker-overlay");
+const backConversionPickerButton = document.getElementById("back-conversion-picker");
+const closeConversionPickerButton = document.getElementById("close-conversion-picker");
+const conversionPickerGrid = document.getElementById("conversion-picker-grid");
+const conversionPickerCopy = document.getElementById("conversion-picker-copy");
 const historyToggleButton = document.getElementById("history-toggle");
 const historyCount = document.getElementById("history-count");
 const historyOverlay = document.getElementById("history-overlay");
@@ -24,8 +29,11 @@ const historyList = document.getElementById("history-list");
 const messages = [];
 const STORAGE_KEY = "mini-ai-assistant-theme";
 const HISTORY_STORAGE_KEY = "mini-ai-assistant-user-history";
-const QUICK_ACTION_TALK = "Talk to AI";
+const QUICK_ACTION_TALK = "Mini AI Assistant";
 const QUICK_ACTION_EXPLAIN = "Explain Code";
+const QUICK_ACTION_OPTIMIZE = "Optimize Code";
+const QUICK_ACTION_REFACTOR = "Refactor Code";
+const QUICK_ACTION_CONVERT = "Convert Language";
 const QUICK_ACTION_GENERATOR = "Code Generator";
 const CODE_LANGUAGES = [
   "javascript",
@@ -48,11 +56,31 @@ const CODE_LANGUAGES = [
   "bash",
   "shell"
 ];
+const CONVERSION_TARGETS = {
+  javascript: ["typescript", "python", "java", "c#", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
+  typescript: ["javascript", "python", "java", "c#", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
+  python: ["javascript", "typescript", "java", "c#", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
+  java: ["javascript", "typescript", "python", "c#", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
+  "c#": ["javascript", "typescript", "python", "java", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
+  "c++": ["javascript", "typescript", "python", "java", "c#", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
+  c: ["javascript", "typescript", "python", "java", "c#", "c++", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
+  go: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "rust", "php", "ruby", "swift", "kotlin", "dart"],
+  rust: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "php", "ruby", "swift", "kotlin", "dart"],
+  php: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "ruby"],
+  ruby: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "php"],
+  swift: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "kotlin", "dart"],
+  kotlin: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "swift", "dart"],
+  dart: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "swift", "kotlin"],
+  bash: ["shell", "python", "javascript"],
+  shell: ["bash", "python", "javascript"]
+};
 let isLoading = false;
 let activeQuickAction = QUICK_ACTION_TALK;
 let lastChatScrollTop = 0;
 let pendingGeneratorPrompt = "";
 let selectedGeneratorLanguage = "";
+let conversionSourceLanguage = "";
+let conversionTargetLanguage = "";
 let conversationHistory = [];
 let expandedHistoryId = "";
 
@@ -64,6 +92,10 @@ marked.setOptions({
 const highlightCode = typeof window.hljs?.highlightElement === "function"
   ? (block) => window.hljs.highlightElement(block)
   : () => {};
+
+function isSmallScreen() {
+  return window.matchMedia("(max-width: 720px)").matches;
+}
 
 function setLoadingState(loading) {
   isLoading = loading;
@@ -222,11 +254,66 @@ function createMessageElement(message) {
   return row;
 }
 
+function getEmptyStateGuidance(actionLabel) {
+  if (actionLabel === QUICK_ACTION_EXPLAIN) {
+    return {
+      mode: "Explain Code",
+      copy: "Paste a code snippet and Mini AI Assistant will break down what each part does, how the flow works, and what needs to be fixed if the code has mistakes."
+    };
+  }
+
+  if (actionLabel === QUICK_ACTION_OPTIMIZE) {
+    return {
+      mode: "Optimize Code",
+      copy: "Paste working code when you want faster logic, cleaner performance, or less repeated work. This mode focuses on efficiency while trying to keep the same behavior."
+    };
+  }
+
+  if (actionLabel === QUICK_ACTION_REFACTOR) {
+    return {
+      mode: "Refactor Code",
+      copy: "Paste code that works but feels messy. This mode improves structure, naming, readability, and maintainability so the code is easier to extend later."
+    };
+  }
+
+  if (actionLabel === QUICK_ACTION_CONVERT) {
+    return {
+      mode: "Convert Language",
+      copy: "Choose a valid source language and target language, then paste your code. Mini AI Assistant will rewrite the logic in the target language while preserving the original behavior as closely as possible."
+    };
+  }
+
+  if (actionLabel === QUICK_ACTION_GENERATOR) {
+    return {
+      mode: "Code Generator",
+      copy: "Describe what you want to build, the key features, and any requirements. If you do not name a language, Mini AI Assistant will ask you to choose one before generating code."
+    };
+  }
+
+  return {
+    mode: "Mini AI Assistant",
+    copy: "Ask for coding help, project ideas, debugging steps, next actions, or technical explanations. Use this mode when you want flexible guidance instead of a strict code-only workflow."
+  };
+}
+
 function renderMessages(scrollMode = "bottom") {
   chatContainer.innerHTML = "";
 
   if (!messages.length) {
-    chatContainer.appendChild(emptyStateTemplate.content.cloneNode(true));
+    const emptyStateFragment = emptyStateTemplate.content.cloneNode(true);
+    const guidance = getEmptyStateGuidance(activeQuickAction);
+    const modeElement = emptyStateFragment.getElementById("empty-state-mode");
+    const copyElement = emptyStateFragment.getElementById("empty-state-copy");
+
+    if (modeElement) {
+      modeElement.textContent = guidance.mode;
+    }
+
+    if (copyElement) {
+      copyElement.textContent = guidance.copy;
+    }
+
+    chatContainer.appendChild(emptyStateFragment);
     return;
   }
 
@@ -270,6 +357,12 @@ function closeHistoryPanel() {
 function openLanguagePicker() {
   languagePickerOverlay.classList.remove("hidden");
   languagePickerOverlay.setAttribute("aria-hidden", "false");
+}
+
+function openConversionPicker() {
+  renderConversionPicker();
+  conversionPickerOverlay.classList.remove("hidden");
+  conversionPickerOverlay.setAttribute("aria-hidden", "false");
 }
 
 function loadPromptHistory() {
@@ -335,6 +428,18 @@ function createHistorySummary(entry) {
     return `Explain: ${shortenTopic(question)}`;
   }
 
+  if (mode === QUICK_ACTION_OPTIMIZE && question) {
+    return `Optimize: ${shortenTopic(question)}`;
+  }
+
+  if (mode === QUICK_ACTION_REFACTOR && question) {
+    return `Refactor: ${shortenTopic(question)}`;
+  }
+
+  if (mode === QUICK_ACTION_CONVERT && question) {
+    return `Convert: ${shortenTopic(question)}`;
+  }
+
   if (mode === QUICK_ACTION_GENERATOR && question) {
     return `Generate: ${shortenTopic(question)}`;
   }
@@ -396,6 +501,11 @@ function closeLanguagePicker() {
   languagePickerOverlay.setAttribute("aria-hidden", "true");
 }
 
+function closeConversionPicker() {
+  conversionPickerOverlay.classList.add("hidden");
+  conversionPickerOverlay.setAttribute("aria-hidden", "true");
+}
+
 function populateLanguagePicker() {
   CODE_LANGUAGES.forEach((language) => {
     const button = document.createElement("button");
@@ -407,21 +517,87 @@ function populateLanguagePicker() {
   });
 }
 
+function getConvertibleSourceLanguages() {
+  return Object.keys(CONVERSION_TARGETS).filter((language) => CONVERSION_TARGETS[language]?.length);
+}
+
+function getConvertibleTargetLanguages(sourceLanguage) {
+  return CONVERSION_TARGETS[sourceLanguage] || [];
+}
+
+function renderConversionPicker() {
+  conversionPickerGrid.innerHTML = "";
+
+  const isPickingTarget = Boolean(conversionSourceLanguage);
+  const languagesToRender = isPickingTarget
+    ? getConvertibleTargetLanguages(conversionSourceLanguage)
+    : getConvertibleSourceLanguages();
+  backConversionPickerButton.classList.toggle("hidden", !isPickingTarget);
+  conversionPickerCopy.textContent = isPickingTarget
+    ? `Source: ${conversionSourceLanguage.toUpperCase()}. Now choose the target language.`
+    : "Choose the source language first, then the target language.";
+
+  languagesToRender.forEach((language) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "language-choice-button";
+    button.dataset.language = language;
+    button.textContent = language.toUpperCase();
+    conversionPickerGrid.appendChild(button);
+  });
+}
+
 function getQuickActionTitle(actionLabel) {
+  return "Mini AI Assistant";
+}
+
+function getModeSwitchMessage(actionLabel) {
   if (actionLabel === QUICK_ACTION_EXPLAIN) {
-    return "Paste Code To Explain";
+    return "You are now in `Explain Code` mode.";
+  }
+
+  if (actionLabel === QUICK_ACTION_OPTIMIZE) {
+    return "You are now in `Optimize Code` mode.";
+  }
+
+  if (actionLabel === QUICK_ACTION_REFACTOR) {
+    return "You are now in `Refactor Code` mode.";
+  }
+
+  if (actionLabel === QUICK_ACTION_CONVERT) {
+    return "You are now in `Convert Language` mode.";
   }
 
   if (actionLabel === QUICK_ACTION_GENERATOR) {
-    return "Generate Project Code";
+    return "You are now in `Code Generator` mode.";
   }
 
-  return "Talk to AI";
+  return "You are now in `Mini AI Assistant` mode.";
 }
 
 function getQuickActionPlaceholder(actionLabel) {
+  if (isSmallScreen()) {
+    return actionLabel === QUICK_ACTION_TALK
+      ? "Ask any thing..."
+      : "Past your code here...";
+  }
+
   if (actionLabel === QUICK_ACTION_EXPLAIN) {
     return "Paste your code here. Mini AI Assistant will explain it and correct clear mistakes if needed.";
+  }
+
+  if (actionLabel === QUICK_ACTION_OPTIMIZE) {
+    return "Paste your code here. Mini AI Assistant will improve performance, efficiency, and code quality.";
+  }
+
+  if (actionLabel === QUICK_ACTION_REFACTOR) {
+    return "Paste your code here. Mini AI Assistant will improve structure, readability, and maintainability.";
+  }
+
+  if (actionLabel === QUICK_ACTION_CONVERT) {
+    return conversionSourceLanguage && conversionTargetLanguage
+      ? `Paste your ${conversionSourceLanguage.toUpperCase()} code here. Mini AI Assistant will convert it to ${conversionTargetLanguage.toUpperCase()}.`
+      : "Choose a valid source and target language first, then paste the code you want to convert.";
   }
 
   if (actionLabel === QUICK_ACTION_GENERATOR) {
@@ -505,6 +681,53 @@ function createModePrompt(prompt) {
     ].join("\n");
   }
 
+  if (activeQuickAction === QUICK_ACTION_OPTIMIZE) {
+    return [
+      "Optimize the following code.",
+      "Focus on performance, unnecessary work, cleaner logic, and safe improvements.",
+      "Preserve the original behavior unless a bug must be fixed.",
+      "Explain the main optimizations briefly.",
+      "Return the optimized code in a single code block.",
+      "",
+      "Code:",
+      "```",
+      prompt,
+      "```"
+    ].join("\n");
+  }
+
+  if (activeQuickAction === QUICK_ACTION_REFACTOR) {
+    return [
+      "Refactor the following code.",
+      "Focus on readability, maintainability, naming, structure, and separation of concerns.",
+      "Preserve the original behavior unless a bug must be fixed.",
+      "Explain the main refactors briefly.",
+      "Return the refactored code in a single code block.",
+      "",
+      "Code:",
+      "```",
+      prompt,
+      "```"
+    ].join("\n");
+  }
+
+  if (activeQuickAction === QUICK_ACTION_CONVERT) {
+    return [
+      "Convert the following code to another programming language.",
+      `Source language: ${conversionSourceLanguage || "unknown"}.`,
+      `Target language: ${conversionTargetLanguage || "unknown"}.`,
+      "Preserve the original behavior as closely as possible.",
+      "Adjust syntax, standard libraries, and idioms for the target language.",
+      "Explain any unavoidable differences briefly.",
+      "Return the converted code in a single code block.",
+      "",
+      "Code:",
+      "```",
+      prompt,
+      "```"
+    ].join("\n");
+  }
+
   if (activeQuickAction === QUICK_ACTION_GENERATOR) {
     const requestedLanguage = detectRequestedLanguage(prompt)
       || selectedGeneratorLanguage
@@ -541,6 +764,10 @@ function appendAssistantNotice(content) {
   renderMessages("assistant-top");
 }
 
+function appendModeNotice(title, message) {
+  appendAssistantNotice(`### ${title}\n\n${message}`);
+}
+
 function detectRequestedLanguage(prompt) {
   const normalizedPrompt = prompt.toLowerCase();
   return CODE_LANGUAGES.find((language) => normalizedPrompt.includes(language)) || "";
@@ -563,7 +790,24 @@ function setActiveQuickAction(activeButton) {
     pendingGeneratorPrompt = "";
   }
 
+  if (actionLabel !== QUICK_ACTION_CONVERT) {
+    conversionSourceLanguage = "";
+    conversionTargetLanguage = "";
+    closeConversionPicker();
+  }
+
   textarea.placeholder = getQuickActionPlaceholder(actionLabel);
+
+  if (actionLabel === QUICK_ACTION_CONVERT) {
+    conversionSourceLanguage = "";
+    conversionTargetLanguage = "";
+    renderConversionPicker();
+    openConversionPicker();
+  }
+
+  if (!messages.length) {
+    renderMessages();
+  }
 }
 
 async function submitPrompt(prompt) {
@@ -626,9 +870,49 @@ async function handleSubmit(event) {
   }
 
   if (activeQuickAction === QUICK_ACTION_EXPLAIN && !looksLikeCode(prompt)) {
-    appendAssistantNotice("### Paste Code Only\n\n`Explain Code` mode only works with pasted code. Paste your code snippet first, then send it again.");
+    appendModeNotice("Paste Code Only", "`Explain Code` mode only works with pasted code. Paste your code snippet first, then send it again.");
     textarea.focus();
     return;
+  }
+
+  if (activeQuickAction === QUICK_ACTION_OPTIMIZE && !looksLikeCode(prompt)) {
+    appendModeNotice("Paste Code Only", "`Optimize Code` mode only works with pasted code. Paste the code you want optimized, then send it again.");
+    textarea.focus();
+    return;
+  }
+
+  if (activeQuickAction === QUICK_ACTION_REFACTOR && !looksLikeCode(prompt)) {
+    appendModeNotice("Paste Code Only", "`Refactor Code` mode only works with pasted code. Paste the code you want refactored, then send it again.");
+    textarea.focus();
+    return;
+  }
+
+  if (activeQuickAction === QUICK_ACTION_CONVERT) {
+    const validTargets = getConvertibleTargetLanguages(conversionSourceLanguage);
+
+    if (!conversionSourceLanguage || !conversionTargetLanguage) {
+      openConversionPicker();
+      appendModeNotice("Choose Conversion", "Pick a valid source and target language first, for example `Python -> JavaScript`, then send your code.");
+      textarea.focus();
+      return;
+    }
+
+    if (!validTargets.includes(conversionTargetLanguage)) {
+      conversionTargetLanguage = "";
+      openConversionPicker();
+      appendModeNotice("Choose Valid Conversion", `\`${conversionSourceLanguage.toUpperCase()}\` cannot be converted to that target here. Choose one of the available target languages.`);
+      textarea.focus();
+      return;
+    }
+
+    if (!looksLikeCode(prompt)) {
+      appendModeNotice(
+        "Paste Code Only",
+        `\`Convert Language\` mode only works with pasted code. Paste your ${conversionSourceLanguage.toUpperCase()} code first, then send it again.`
+      );
+      textarea.focus();
+      return;
+    }
   }
 
   if (activeQuickAction === QUICK_ACTION_GENERATOR) {
@@ -650,7 +934,9 @@ async function handleSubmit(event) {
 
 chatForm.addEventListener("submit", handleSubmit);
 
-textarea.addEventListener("input", autoResizeTextarea);
+textarea.addEventListener("input", () => {
+  autoResizeTextarea();
+});
 textarea.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
@@ -709,6 +995,7 @@ quickActionsMenu.addEventListener("click", (event) => {
   }
 
   setActiveQuickAction(actionButton);
+  appendAssistantNotice(`### Mode Changed\n\n${getModeSwitchMessage(activeQuickAction)}`);
   textarea.value = "";
   autoResizeTextarea();
   textarea.focus();
@@ -720,9 +1007,28 @@ closeLanguagePickerButton.addEventListener("click", () => {
   textarea.focus();
 });
 
+closeConversionPickerButton.addEventListener("click", () => {
+  closeConversionPicker();
+  textarea.focus();
+});
+
+backConversionPickerButton.addEventListener("click", () => {
+  conversionSourceLanguage = "";
+  conversionTargetLanguage = "";
+  renderConversionPicker();
+  textarea.placeholder = getQuickActionPlaceholder(activeQuickAction);
+});
+
 languagePickerOverlay.addEventListener("click", (event) => {
   if (event.target === languagePickerOverlay) {
     closeLanguagePicker();
+    textarea.focus();
+  }
+});
+
+conversionPickerOverlay.addEventListener("click", (event) => {
+  if (event.target === conversionPickerOverlay) {
+    closeConversionPicker();
     textarea.focus();
   }
 });
@@ -738,6 +1044,33 @@ languagePickerGrid.addEventListener("click", async (event) => {
   closeLanguagePicker();
   await submitPrompt(pendingGeneratorPrompt);
   pendingGeneratorPrompt = "";
+});
+
+conversionPickerGrid.addEventListener("click", (event) => {
+  const languageButton = event.target.closest(".language-choice-button");
+
+  if (!languageButton) {
+    return;
+  }
+
+  const selectedLanguage = languageButton.dataset.language || "";
+
+  if (!conversionSourceLanguage) {
+    conversionSourceLanguage = selectedLanguage;
+    conversionTargetLanguage = "";
+    renderConversionPicker();
+    textarea.placeholder = getQuickActionPlaceholder(activeQuickAction);
+    return;
+  }
+
+  conversionTargetLanguage = selectedLanguage;
+  closeConversionPicker();
+  textarea.placeholder = getQuickActionPlaceholder(activeQuickAction);
+  textarea.focus();
+});
+
+window.addEventListener("resize", () => {
+  textarea.placeholder = getQuickActionPlaceholder(activeQuickAction);
 });
 
 chatContainer.addEventListener("scroll", () => {
@@ -764,6 +1097,7 @@ if (defaultQuickActionButton) {
 }
 
 populateLanguagePicker();
+renderConversionPicker();
 loadPromptHistory();
 initializeTheme();
 autoResizeTextarea();

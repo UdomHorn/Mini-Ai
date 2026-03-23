@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Talk to AI</title>
+    <title>Mini AI Assistant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -17,9 +17,15 @@
   <body>
     <div class="app-shell">
       <header class="app-header">
-        <div>
-          <p class="eyebrow">Mini AI Assistant</p>
-          <h1 id="chat-title">Talk to AI</h1>
+        <div class="brand-block">
+          <span class="brand-icon" aria-hidden="true">
+            <svg viewBox="0 0 512 512" class="brand-icon-svg" focusable="false">
+              <path d="M256 32c11 0 20 9 20 20v36h56c53 0 96 43 96 96v124c0 53-43 96-96 96H180c-53 0-96-43-96-96V184c0-53 43-96 96-96h56V52c0-11 9-20 20-20Zm-76 96c-31 0-56 25-56 56v124c0 31 25 56 56 56h152c31 0 56-25 56-56V184c0-31-25-56-56-56H180Zm-12 80c11 0 20 9 20 20v20c0 11-9 20-20 20s-20-9-20-20v-20c0-11 9-20 20-20Zm176 0c11 0 20 9 20 20v20c0 11-9 20-20 20s-20-9-20-20v-20c0-11 9-20 20-20ZM196 300h120c11 0 20 9 20 20s-9 20-20 20H196c-11 0-20-9-20-20s9-20 20-20ZM120 188H72c-11 0-20-9-20-20s9-20 20-20h48c11 0 20 9 20 20s-9 20-20 20Zm320 0h-48c-11 0-20-9-20-20s9-20 20-20h48c11 0 20 9 20 20s-9 20-20 20ZM132 420c18 0 32 14 32 32v8c0 11-9 20-20 20s-20-9-20-20v-8c0-7-5-12-12-12s-12 5-12 12v8c0 11-9 20-20 20s-20-9-20-20v-8c0-29 23-52 52-52Zm268 0c29 0 52 23 52 52v8c0 11-9 20-20 20s-20-9-20-20v-8c0-7-5-12-12-12s-12 5-12 12v8c0 11-9 20-20 20s-20-9-20-20v-8c0-18 14-32 32-32Z"/>
+            </svg>
+          </span>
+          <div>
+            <p id="chat-title" class="brand-title">Mini AI Assistant</p>
+          </div>
         </div>
         <div class="header-actions">
           <button id="history-toggle" class="ghost-button history-button" type="button" aria-label="Open history">
@@ -50,11 +56,23 @@
           <div id="quick-actions-menu" class="quick-actions-menu hidden">
             <button class="quick-action-button active" type="button" data-prompt="Help me learn coding for my idea and guide the next steps.">
               <span class="quick-action-icon" aria-hidden="true">Talk</span>
-              <span>Talk to AI</span>
+              <span>Mini AI Assistant</span>
             </button>
             <button class="quick-action-button" type="button" data-prompt="Explain this code clearly, step by step, and tell me what each part does.">
               <span class="quick-action-icon" aria-hidden="true">?</span>
               <span>Explain Code</span>
+            </button>
+            <button class="quick-action-button" type="button" data-prompt="Optimize this code for better performance, efficiency, and clarity.">
+              <span class="quick-action-icon" aria-hidden="true">Op</span>
+              <span>Optimize Code</span>
+            </button>
+            <button class="quick-action-button" type="button" data-prompt="Refactor this code to improve structure, readability, and maintainability.">
+              <span class="quick-action-icon" aria-hidden="true">Rf</span>
+              <span>Refactor Code</span>
+            </button>
+            <button class="quick-action-button" type="button" data-prompt="Convert this code from one language to another while preserving behavior.">
+              <span class="quick-action-icon" aria-hidden="true">Cv</span>
+              <span>Convert Language</span>
             </button>
           </div>
         </div>
@@ -63,13 +81,13 @@
       </main>
 
       <form id="chat-form" class="chat-form">
-        <label class="sr-only" for="prompt-input">Ask Learn Coding With AI</label>
+        <label class="sr-only" for="prompt-input">Ask Learn Coding With Mini AI Assistant</label>
         <textarea
           id="prompt-input"
           name="prompt"
           rows="1"
           maxlength="6000"
-          placeholder="Ask Learn Coding With AI..."
+          placeholder="Ask Learn Coding With Mini AI Assistant..."
         ></textarea>
         <button id="submit-button" type="submit">Send</button>
       </form>
@@ -85,6 +103,23 @@
           </div>
           <p class="language-picker-copy">Pick the language you want Mini AI Assistant to generate for your prompt.</p>
           <div id="language-picker-grid" class="language-picker-grid"></div>
+        </div>
+      </div>
+
+      <div id="conversion-picker-overlay" class="language-picker-overlay hidden" aria-hidden="true">
+        <div class="language-picker" role="dialog" aria-modal="true" aria-labelledby="conversion-picker-title">
+          <div class="language-picker-header">
+            <div>
+              <p class="eyebrow">Language Converter</p>
+              <h2 id="conversion-picker-title">Choose Conversion</h2>
+            </div>
+            <div class="picker-actions">
+              <button id="back-conversion-picker" class="ghost-button hidden" type="button">Back</button>
+              <button id="close-conversion-picker" class="ghost-button" type="button">Close</button>
+            </div>
+          </div>
+          <p id="conversion-picker-copy" class="language-picker-copy">Choose the source language first, then the target language.</p>
+          <div id="conversion-picker-grid" class="language-picker-grid"></div>
         </div>
       </div>
 
@@ -105,8 +140,10 @@
 
     <template id="empty-state-template">
       <div class="empty-state">
-        <p class="empty-state-kicker">Start Chat</p>
-        <h2>Learn Coding With AI.</h2>
+        <div class="empty-state-detail">
+          <p id="empty-state-mode" class="empty-state-mode"></p>
+          <p id="empty-state-copy" class="empty-state-copy"></p>
+        </div>
       </div>
     </template>
 
