@@ -57,22 +57,12 @@ const CODE_LANGUAGES = [
   "shell"
 ];
 const CONVERSION_TARGETS = {
-  javascript: ["typescript", "python", "java", "c#", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
-  typescript: ["javascript", "python", "java", "c#", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
-  python: ["javascript", "typescript", "java", "c#", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
-  java: ["javascript", "typescript", "python", "c#", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
-  "c#": ["javascript", "typescript", "python", "java", "c++", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
-  "c++": ["javascript", "typescript", "python", "java", "c#", "c", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
-  c: ["javascript", "typescript", "python", "java", "c#", "c++", "go", "rust", "php", "ruby", "swift", "kotlin", "dart"],
-  go: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "rust", "php", "ruby", "swift", "kotlin", "dart"],
-  rust: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "php", "ruby", "swift", "kotlin", "dart"],
-  php: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "ruby"],
-  ruby: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "php"],
-  swift: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "kotlin", "dart"],
-  kotlin: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "swift", "dart"],
-  dart: ["javascript", "typescript", "python", "java", "c#", "c++", "c", "go", "rust", "swift", "kotlin"],
-  bash: ["shell", "python", "javascript"],
-  shell: ["bash", "python", "javascript"]
+  javascript: ["python", "java", "c#", "c++", "c"],
+  python: ["javascript", "java", "c#", "c++", "c"],
+  java: ["javascript", "python", "c#", "c++", "c"],
+  "c#": ["javascript", "python", "java", "c++", "c"],
+  "c++": ["javascript", "python", "java", "c#", "c"],
+  c: ["javascript", "python", "java", "c#", "c++"]
 };
 let isLoading = false;
 let activeRequestController = null;
@@ -95,7 +85,6 @@ marked.setOptions({
 const highlightCode = typeof window.hljs?.highlightElement === "function"
   ? (block) => window.hljs.highlightElement(block)
   : () => {};
-const SUPPORTED_RUN_LANGUAGES = new Set(["javascript", "js", "html"]);
 
 function isSmallScreen() {
   return window.matchMedia("(max-width: 720px)").matches;
@@ -111,7 +100,7 @@ function setLoadingState(loading) {
     return;
   }
 
-  submitButton.textContent = "Cancel (0s)";
+  submitButton.textContent = "Cancel";
 }
 
 function getLoadingElapsedSeconds() {
@@ -120,6 +109,34 @@ function getLoadingElapsedSeconds() {
   }
 
   return Math.max(0, Math.floor((Date.now() - loadingStartedAt) / 1000));
+}
+
+function getLatestPendingAssistantMessageIndex() {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index].role === "assistant" && messages[index].pending) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function updateThinkingMessageTimer() {
+  const pendingIndex = getLatestPendingAssistantMessageIndex();
+
+  if (pendingIndex < 0) {
+    return;
+  }
+
+  const nextValue = `Thinking... (${getLoadingElapsedSeconds()}s)`;
+  messages[pendingIndex].content = nextValue;
+
+  const pendingRows = chatContainer.querySelectorAll(".message-row.assistant.pending .message-content");
+  const latestPendingContent = pendingRows[pendingRows.length - 1];
+
+  if (latestPendingContent) {
+    latestPendingContent.innerHTML = `<p>${nextValue}</p>`;
+  }
 }
 
 function startLoadingTimer() {
@@ -134,8 +151,10 @@ function startLoadingTimer() {
       return;
     }
 
-    submitButton.textContent = `Cancel (${getLoadingElapsedSeconds()}s)`;
+    updateThinkingMessageTimer();
   }, 1000);
+
+  updateThinkingMessageTimer();
 }
 
 function stopLoadingTimer() {
@@ -225,219 +244,6 @@ function attachCopyBehavior(button, text) {
   });
 }
 
-function normalizeLanguageLabel(value) {
-  const normalized = (value || "").trim().toLowerCase();
-
-  if (!normalized) {
-    return "";
-  }
-
-  if (normalized === "node" || normalized === "nodejs" || normalized === "mjs" || normalized === "cjs") {
-    return "javascript";
-  }
-
-  return normalized;
-}
-
-function createRunPanel() {
-  const panel = document.createElement("div");
-  panel.className = "code-runner-panel hidden";
-
-  const meta = document.createElement("div");
-  meta.className = "code-runner-meta";
-
-  const status = document.createElement("span");
-  status.className = "code-runner-status";
-  status.textContent = "Ready";
-
-  const elapsed = document.createElement("span");
-  elapsed.className = "code-runner-elapsed";
-
-  const output = document.createElement("pre");
-  output.className = "code-runner-output";
-
-  const preview = document.createElement("div");
-  preview.className = "code-runner-preview hidden";
-
-  const frame = document.createElement("iframe");
-  frame.className = "code-runner-frame";
-  frame.setAttribute("title", "Code preview");
-  frame.setAttribute("sandbox", "allow-scripts");
-  preview.appendChild(frame);
-
-  meta.append(status, elapsed);
-  panel.append(meta, output, preview);
-
-  return { panel, status, elapsed, output, preview, frame };
-}
-
-function formatRunnerResult(value) {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  if (typeof value === "undefined") {
-    return "undefined";
-  }
-
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch (error) {
-    return String(value);
-  }
-}
-
-function languageRunHelpText(language) {
-  if (!language) {
-    return "Run is available for JavaScript and HTML code blocks.";
-  }
-
-  return `Run is currently available for JavaScript and HTML only. \`${language}\` cannot run in this browser runner yet.`;
-}
-
-async function executeJavaScriptSnippet(code) {
-  return new Promise((resolve, reject) => {
-    const workerSource = `
-      const logs = [];
-      const pushLog = (kind, args) => {
-        logs.push([kind, ...args.map((item) => {
-          if (typeof item === "string") return item;
-          try { return JSON.stringify(item); } catch (_) { return String(item); }
-        })]);
-      };
-      console.log = (...args) => pushLog("log", args);
-      console.info = (...args) => pushLog("info", args);
-      console.warn = (...args) => pushLog("warn", args);
-      console.error = (...args) => pushLog("error", args);
-      self.onmessage = async (event) => {
-        const sourceCode = event.data || "";
-        try {
-          const result = await (async () => eval(sourceCode))();
-          self.postMessage({ ok: true, result, logs });
-        } catch (error) {
-          self.postMessage({ ok: false, error: error?.message || String(error), logs });
-        }
-      };
-    `;
-
-    const blob = new Blob([workerSource], { type: "application/javascript" });
-    const workerUrl = URL.createObjectURL(blob);
-    const worker = new Worker(workerUrl);
-    let finished = false;
-
-    const cleanup = () => {
-      worker.terminate();
-      URL.revokeObjectURL(workerUrl);
-    };
-
-    const timeoutId = window.setTimeout(() => {
-      if (finished) {
-        return;
-      }
-
-      finished = true;
-      cleanup();
-      reject(new Error("Execution timed out after 5 seconds."));
-    }, 5000);
-
-    worker.onmessage = (event) => {
-      if (finished) {
-        return;
-      }
-
-      finished = true;
-      window.clearTimeout(timeoutId);
-      cleanup();
-      resolve(event.data || {});
-    };
-
-    worker.onerror = (event) => {
-      if (finished) {
-        return;
-      }
-
-      finished = true;
-      window.clearTimeout(timeoutId);
-      cleanup();
-      reject(new Error(event.message || "Worker execution failed."));
-    };
-
-    worker.postMessage(code);
-  });
-}
-
-async function runCodeSnippet(language, code, panelElements) {
-  const normalizedLanguage = normalizeLanguageLabel(language);
-  const {
-    panel,
-    status,
-    elapsed,
-    output,
-    preview,
-    frame
-  } = panelElements;
-  const startedAt = Date.now();
-
-  panel.classList.remove("hidden");
-  preview.classList.add("hidden");
-  frame.srcdoc = "";
-  output.classList.remove("hidden");
-  status.textContent = "Running...";
-  elapsed.textContent = "";
-  output.textContent = "";
-
-  if (!SUPPORTED_RUN_LANGUAGES.has(normalizedLanguage)) {
-    status.textContent = "Not Supported";
-    output.textContent = languageRunHelpText(normalizedLanguage);
-    return;
-  }
-
-  if (normalizedLanguage === "html") {
-    const duration = ((Date.now() - startedAt) / 1000).toFixed(2);
-    status.textContent = "Completed";
-    elapsed.textContent = `${duration}s`;
-    output.classList.add("hidden");
-    preview.classList.remove("hidden");
-    frame.srcdoc = code;
-    return;
-  }
-
-  try {
-    const result = await executeJavaScriptSnippet(code);
-    const duration = ((Date.now() - startedAt) / 1000).toFixed(2);
-    elapsed.textContent = `${duration}s`;
-
-    const logs = Array.isArray(result.logs)
-      ? result.logs.map((line) => `[${line[0]}] ${line.slice(1).join(" ")}`)
-      : [];
-
-    if (!result.ok) {
-      status.textContent = "Error";
-      output.textContent = [...logs, `Error: ${result.error || "Unknown error"}`].join("\n");
-      return;
-    }
-
-    status.textContent = "Completed";
-
-    const resultText = formatRunnerResult(result.result);
-    const chunks = [];
-
-    if (logs.length) {
-      chunks.push("Console output:");
-      chunks.push(logs.join("\n"));
-    }
-
-    chunks.push("Result:");
-    chunks.push(resultText);
-    output.textContent = chunks.join("\n\n");
-  } catch (error) {
-    const duration = ((Date.now() - startedAt) / 1000).toFixed(2);
-    elapsed.textContent = `${duration}s`;
-    status.textContent = "Error";
-    output.textContent = error.message || "Execution failed.";
-  }
-}
-
 function enhanceCodeBlocks(container) {
   container.querySelectorAll("pre").forEach((pre) => {
     const code = pre.querySelector("code");
@@ -467,32 +273,15 @@ function enhanceCodeBlocks(container) {
     copyButton.dataset.failedLabel = "Copy failed";
     attachCopyBehavior(copyButton, code.textContent || "");
 
-    const runButton = document.createElement("button");
-    runButton.type = "button";
-    runButton.className = "copy-button code-run-button";
-    runButton.textContent = "Run";
-
-    const panelElements = createRunPanel();
-    const sourceCode = code.textContent || "";
-    const sourceLanguage = languageLabel.textContent || "";
-
-    runButton.addEventListener("click", async () => {
-      runButton.disabled = true;
-      runButton.textContent = "Running...";
-      await runCodeSnippet(sourceLanguage, sourceCode, panelElements);
-      runButton.disabled = false;
-      runButton.textContent = "Run";
-    });
-
-    toolbar.append(languageLabel, copyButton, runButton);
+    toolbar.append(languageLabel, copyButton);
     pre.replaceWith(wrapper);
-    wrapper.append(toolbar, pre, panelElements.panel);
+    wrapper.append(toolbar, pre);
   });
 }
 
 function createMessageElement(message) {
   const row = document.createElement("article");
-  row.className = `message-row ${message.role}`;
+  row.className = `message-row ${message.role}${message.pending ? " pending" : ""}`;
 
   const bubble = document.createElement("div");
   bubble.className = `message ${message.role}`;
@@ -697,43 +486,117 @@ function createHistorySummary(entry) {
     .trim();
   const mode = entry.mode || QUICK_ACTION_TALK;
 
-  function shortenTopic(text) {
+  function toTitleCase(text) {
+    if (!text) {
+      return "Code";
+    }
+
+    return text
+      .split(/[\s_-]+/)
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
+
+  function shorten(text, limit = 42) {
     const compact = text
       .replace(/^(please|can you|could you|help me|i want to|how to)\s+/i, "")
+      .replace(/[{}()[\];]/g, " ")
+      .replace(/\s+/g, " ")
       .trim();
 
-    return compact.length > 28 ? `${compact.slice(0, 28).trim()}...` : compact;
+    if (!compact) {
+      return "";
+    }
+
+    return compact.length > limit ? `${compact.slice(0, limit).trim()}...` : compact;
   }
 
-  if (mode === QUICK_ACTION_EXPLAIN && question) {
-    return `Explain: ${shortenTopic(question)}`;
+  function detectLanguageFromText(text) {
+    const normalized = text.toLowerCase();
+    const explicit = detectRequestedLanguage(normalized);
+
+    if (explicit) {
+      return explicit;
+    }
+
+    if (normalized.includes("#include") || normalized.includes("printf(")) {
+      return "c";
+    }
+
+    if (normalized.includes("std::") || normalized.includes("cout <<")) {
+      return "c++";
+    }
+
+    if (normalized.includes("system.out.println") || normalized.includes("public static void main")) {
+      return "java";
+    }
+
+    if (normalized.includes("console.log(") || normalized.includes("=>") || normalized.includes("function ")) {
+      return "javascript";
+    }
+
+    if (normalized.includes("def ") || normalized.includes("print(") || normalized.includes("import ")) {
+      return "python";
+    }
+
+    if (normalized.includes("using system;") || normalized.includes("namespace ") || normalized.includes("string[] args")) {
+      return "c#";
+    }
+
+    return "code";
   }
 
-  if (mode === QUICK_ACTION_OPTIMIZE && question) {
-    return `Optimize: ${shortenTopic(question)}`;
+  function detectConvertPath(text) {
+    const supported = ["javascript", "python", "java", "c#", "c++", "c"];
+    const normalized = text.toLowerCase();
+    const detected = supported.filter((language) => normalized.includes(language));
+
+    if (detected.length >= 2) {
+      return `${toTitleCase(detected[0])} -> ${toTitleCase(detected[1])}`;
+    }
+
+    if (detected.length === 1) {
+      return `to ${toTitleCase(detected[0])}`;
+    }
+
+    return "code conversion";
   }
 
-  if (mode === QUICK_ACTION_REFACTOR && question) {
-    return `Refactor: ${shortenTopic(question)}`;
+  function buildModeSummary() {
+    if (mode === QUICK_ACTION_EXPLAIN) {
+      const language = toTitleCase(detectLanguageFromText(question));
+      return `Explain: "${language}, code flow and logic"`;
+    }
+
+    if (mode === QUICK_ACTION_OPTIMIZE) {
+      const language = toTitleCase(detectLanguageFromText(question));
+      const topic = shorten(question) || "performance improvements";
+      return `Optimize: "${language}, ${topic}"`;
+    }
+
+    if (mode === QUICK_ACTION_REFACTOR) {
+      const language = toTitleCase(detectLanguageFromText(question));
+      const topic = shorten(question) || "cleaner structure";
+      return `Refactor: "${language}, ${topic}"`;
+    }
+
+    if (mode === QUICK_ACTION_CONVERT) {
+      const path = detectConvertPath(question);
+      return `Convert: "${path}"`;
+    }
+
+    if (mode === QUICK_ACTION_GENERATOR) {
+      const language = toTitleCase(detectLanguageFromText(question));
+      const topic = shorten(question) || "new feature";
+      return `Generate: "${language}, ${topic}"`;
+    }
+
+    const topic = shorten(question || answer) || "general help";
+    return `Chat: "${topic}"`;
   }
 
-  if (mode === QUICK_ACTION_CONVERT && question) {
-    return `Convert: ${shortenTopic(question)}`;
-  }
-
-  if (mode === QUICK_ACTION_GENERATOR && question) {
-    return `Generate: ${shortenTopic(question)}`;
-  }
-
-  if (question) {
-    return `Chat: ${shortenTopic(question)}`;
-  }
-
-  if (answer) {
-    return shortenTopic(answer);
-  }
-
-  return "Conversation";
+  return buildModeSummary();
 }
 
 function renderHistoryList() {
@@ -967,7 +830,8 @@ function createModePrompt(prompt) {
       "Optimize the following code.",
       "Focus on performance, unnecessary work, cleaner logic, and safe improvements.",
       "Preserve the original behavior unless a bug must be fixed.",
-      "Explain the main optimizations briefly.",
+      "Explain the main optimizations briefly outside the code block.",
+      "Do not add code comments inside the returned code.",
       "Return the optimized code in a single code block.",
       "",
       "Code:",
@@ -982,7 +846,8 @@ function createModePrompt(prompt) {
       "Refactor the following code.",
       "Focus on readability, maintainability, naming, structure, and separation of concerns.",
       "Preserve the original behavior unless a bug must be fixed.",
-      "Explain the main refactors briefly.",
+      "Explain the main refactors briefly outside the code block.",
+      "Do not add code comments inside the returned code.",
       "Return the refactored code in a single code block.",
       "",
       "Code:",
@@ -1000,6 +865,7 @@ function createModePrompt(prompt) {
       "Preserve the original behavior as closely as possible.",
       "Adjust syntax, standard libraries, and idioms for the target language.",
       "Return only the converted code in a single code block.",
+      "Do not add comments inside the converted code.",
       "Do not include explanation, notes, summary, or markdown text outside the code block.",
       "",
       "Code:",
@@ -1020,7 +886,8 @@ function createModePrompt(prompt) {
       `Use ${requestedLanguage}. If the user did not specify a language, choose the best technology for the problem.`,
       "Write clean, modular, and maintainable code.",
       "Include error handling and validation where appropriate.",
-      "Add helpful comments.",
+      "Do not add comments inside the code.",
+      "Put all explanations outside the code block.",
       "Ensure the code can run without modification.",
       "Do not output broken or incomplete code.",
       "Do not use placeholders like '...' or 'TODO'.",
@@ -1095,7 +962,7 @@ async function submitPrompt(prompt) {
   const finalPrompt = createModePrompt(prompt);
 
   messages.push({ role: "user", content: prompt });
-  messages.push({ role: "assistant", content: "Thinking...", pending: true });
+  messages.push({ role: "assistant", content: "Thinking... (0s)", pending: true });
   renderMessages("bottom");
   setLoadingState(true);
   startLoadingTimer();
