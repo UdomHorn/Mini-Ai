@@ -328,35 +328,35 @@ function getEmptyStateGuidance(actionLabel) {
   if (actionLabel === QUICK_ACTION_EXPLAIN) {
     return {
       mode: "Explain Code",
-      copy: "Paste a code snippet and Mini AI Assistant will break down what each part does, how the flow works, and what needs to be fixed if the code has mistakes."
+      copy: "Paste a code snippet. Mini AI Assistant explains the flow, key parts, and clear issues in simple terms."
     };
   }
 
   if (actionLabel === QUICK_ACTION_OPTIMIZE) {
     return {
       mode: "Optimize Code",
-      copy: "Paste working code when you want faster logic, cleaner performance, or less repeated work. This mode focuses on efficiency while trying to keep the same behavior."
+      copy: "Paste working code to improve speed and efficiency while keeping the same behavior."
     };
   }
 
   if (actionLabel === QUICK_ACTION_REFACTOR) {
     return {
       mode: "Refactor Code",
-      copy: "Paste code that works but feels messy. This mode improves structure, naming, readability, and maintainability so the code is easier to extend later."
+      copy: "Paste code that works but feels messy. This mode keeps behavior the same and returns a simpler, minimal refactor without unnecessary complexity."
     };
   }
 
   if (actionLabel === QUICK_ACTION_CONVERT) {
     return {
       mode: "Convert Language",
-      copy: "Choose a valid source language and target language, then paste your code. Mini AI Assistant will convert the code into the target language and return only the converted code."
+      copy: "Choose source and target language, then paste your code. Supported languages are JavaScript, Python, Java, C#, C++, and C. Output is converted code only."
     };
   }
 
   if (actionLabel === QUICK_ACTION_GENERATOR) {
     return {
       mode: "Code Generator",
-      copy: "Describe what you want to build, the key features, and any requirements. If you do not name a language, Mini AI Assistant will ask you to choose one before generating code."
+      copy: "Describe what you want to build and the requirements. Mini AI Assistant will generate clean code without inline comments."
     };
   }
 
@@ -679,7 +679,7 @@ function renderConversionPicker() {
   backConversionPickerButton.classList.toggle("hidden", !isPickingTarget);
   conversionPickerCopy.textContent = isPickingTarget
     ? `Source: ${conversionSourceLanguage.toUpperCase()}. Now choose the target language.`
-    : "Choose the source language first, then the target language.";
+    : "Choose source first, then target. Available: JavaScript, Python, Java, C#, C++, C.";
 
   languagesToRender.forEach((language) => {
     const button = document.createElement("button");
@@ -722,8 +722,8 @@ function getModeSwitchMessage(actionLabel) {
 function getQuickActionPlaceholder(actionLabel) {
   if (isSmallScreen()) {
     return actionLabel === QUICK_ACTION_TALK
-      ? "Ask any thing..."
-      : "Past your code here...";
+      ? "Ask anything..."
+      : "Paste your code here...";
   }
 
   if (actionLabel === QUICK_ACTION_EXPLAIN) {
@@ -735,17 +735,17 @@ function getQuickActionPlaceholder(actionLabel) {
   }
 
   if (actionLabel === QUICK_ACTION_REFACTOR) {
-    return "Paste your code here. Mini AI Assistant will improve structure, readability, and maintainability.";
+    return "Paste your code here. Mini AI Assistant will return a minimal refactor that improves readability without unnecessary complexity.";
   }
 
   if (actionLabel === QUICK_ACTION_CONVERT) {
     return conversionSourceLanguage && conversionTargetLanguage
       ? `Paste your ${conversionSourceLanguage.toUpperCase()} code here. Mini AI Assistant will return converted ${conversionTargetLanguage.toUpperCase()} code only.`
-      : "Choose a valid source and target language first, then paste the code you want to convert.";
+      : "Choose source and target first (JavaScript, Python, Java, C#, C++, C), then paste the code to convert.";
   }
 
   if (actionLabel === QUICK_ACTION_GENERATOR) {
-    return "Describe what you want to build, key features, and requirements. If you do not include a language, you will be asked to choose one.";
+    return "Describe what you want to build, key features, and requirements. Output will be clean code with explanation outside the code block.";
   }
 
   return "Ask about your idea, bug, feature, code problem, or next step.";
@@ -845,6 +845,9 @@ function createModePrompt(prompt) {
     return [
       "Refactor the following code.",
       "Focus on readability, maintainability, naming, structure, and separation of concerns.",
+      "Keep the solution minimal and simple.",
+      "Do not introduce unnecessary abstraction, patterns, files, classes, or helper layers.",
+      "Prefer fewer lines and straightforward logic when behavior can stay the same.",
       "Preserve the original behavior unless a bug must be fixed.",
       "Explain the main refactors briefly outside the code block.",
       "Do not add code comments inside the returned code.",
@@ -1050,12 +1053,12 @@ async function handleSubmit(event) {
   if (activeQuickAction === QUICK_ACTION_CONVERT) {
     const validTargets = getConvertibleTargetLanguages(conversionSourceLanguage);
 
-    if (!conversionSourceLanguage || !conversionTargetLanguage) {
-      openConversionPicker();
-      appendModeNotice("Choose Conversion", "Pick a valid source and target language first, for example `Python -> JavaScript`, then send your code.");
-      textarea.focus();
-      return;
-    }
+      if (!conversionSourceLanguage || !conversionTargetLanguage) {
+        openConversionPicker();
+        appendModeNotice("Choose Conversion", "Pick source and target first from `JavaScript`, `Python`, `Java`, `C#`, `C++`, `C`, then send your code.");
+        textarea.focus();
+        return;
+      }
 
     if (!validTargets.includes(conversionTargetLanguage)) {
       conversionTargetLanguage = "";

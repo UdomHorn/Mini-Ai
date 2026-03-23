@@ -168,4 +168,112 @@
 81. if user not yet use any mode when they switch option should show the text detail first .the alert message should show while user is using one mode and switch to another.
 
 82. save all the code that used to ask in doc.md
+83. when user send a request ,  let user can cancel their request on thinging button, and when ai generate answer let user see the timing count. to make they know how long was they waiting.
+84. check on convert language button , the button allow user to paste the language that they want to converted to get other laguage not to explain the different. If user paste javascript code and they want Python ,button funtion must converd code from javascript to python. the language they can't convert don't show the language option.
+85. make the run button in ai answered respond so user can click to run to see the code result
+86. the convert button are so many option delete some option just keep javascript python java c# c++ c .anything else remove.
+87. remove the run button option
+88. for code generated answer make code clear ,explain outside the code don't comment inside code it look messy
+89. move the timing from cancel butoon to put near thinking... while ai is generating answer.
+90. don't make the page blink just count to timing number
+91. make the title inside conversation history looks cleaner example. when user use refactor button should show Refactor: "the language , and the sumurize meaning here" not just text from quetion. to make user easier to notice what they was ask for.
+92. for refactor mode make the code simpler for minimal code don't introduce unneccessary complexity.
+93. update the text detail meaning to fit the funtionality
+94. save all prompt in doc.md
+95. i need all prompt what i worte in doc.md
+
+## Current In-App Prompt Templates
+
+### Talk To Mini AI
+```text
+{USER_INPUT}
+```
+
+### Explain Code
+```text
+Explain the following code clearly.
+Focus on what each part does, the flow of execution, important patterns, and possible issues.
+If the code is wrong, buggy, incomplete, or has syntax mistakes, correct it.
+When you correct it, include a fixed code version and clearly explain what was wrong.
+Keep the explanation practical and easy to understand.
+
+Code:
+```
+{USER_INPUT}
+```
+```
+
+### Optimize Code
+```text
+Optimize the following code.
+Focus on performance, unnecessary work, cleaner logic, and safe improvements.
+Preserve the original behavior unless a bug must be fixed.
+Explain the main optimizations briefly outside the code block.
+Do not add code comments inside the returned code.
+Return the optimized code in a single code block.
+
+Code:
+```
+{USER_INPUT}
+```
+```
+
+### Refactor Code
+```text
+Refactor the following code.
+Focus on readability, maintainability, naming, structure, and separation of concerns.
+Keep the solution minimal and simple.
+Do not introduce unnecessary abstraction, patterns, files, classes, or helper layers.
+Prefer fewer lines and straightforward logic when behavior can stay the same.
+Preserve the original behavior unless a bug must be fixed.
+Explain the main refactors briefly outside the code block.
+Do not add code comments inside the returned code.
+Return the refactored code in a single code block.
+
+Code:
+```
+{USER_INPUT}
+```
+```
+
+### Convert Language
+```text
+Convert the following code to another programming language.
+Source language: {SOURCE_LANGUAGE}.
+Target language: {TARGET_LANGUAGE}.
+Preserve the original behavior as closely as possible.
+Adjust syntax, standard libraries, and idioms for the target language.
+Return only the converted code in a single code block.
+Do not add comments inside the converted code.
+Do not include explanation, notes, summary, or markdown text outside the code block.
+
+Code:
+```
+{USER_INPUT}
+```
+```
+
+### Code Generator
+```text
+You are in Code Generator mode.
+First analyze the problem carefully.
+Use {REQUESTED_OR_SELECTED_LANGUAGE}. If the user did not specify a language, choose the best technology for the problem.
+Write clean, modular, and maintainable code.
+Include error handling and validation where appropriate.
+Do not add comments inside the code.
+Put all explanations outside the code block.
+Ensure the code can run without modification.
+Do not output broken or incomplete code.
+Do not use placeholders like '...' or 'TODO'.
+Do not assume missing critical data; handle it safely in code.
+Keep the response concise but complete.
+Output strictly in this format:
+Explanation
+Code
+Notes
+The Code section must contain the code in a single code block.
+Only include Notes if needed.
+
+User request: {USER_INPUT}
+```
 
