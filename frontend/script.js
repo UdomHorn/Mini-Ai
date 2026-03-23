@@ -25,6 +25,7 @@ const historyCount = document.getElementById("history-count");
 const historyOverlay = document.getElementById("history-overlay");
 const closeHistoryButton = document.getElementById("close-history");
 const historyList = document.getElementById("history-list");
+const jumpToBottomButton = document.getElementById("jump-to-bottom");
 
 const messages = [];
 const STORAGE_KEY = "mini-ai-assistant-theme";
@@ -208,6 +209,27 @@ function scrollToBottom() {
   chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
+function scrollToBottomSmooth() {
+  chatContainer.scrollTo({
+    top: chatContainer.scrollHeight,
+    behavior: "smooth"
+  });
+}
+
+function isNearBottom() {
+  const distanceFromBottom = chatContainer.scrollHeight - (chatContainer.scrollTop + chatContainer.clientHeight);
+  return distanceFromBottom <= 64;
+}
+
+function updateJumpToBottomVisibility() {
+  if (!messages.length || isNearBottom()) {
+    jumpToBottomButton.classList.add("hidden");
+    return;
+  }
+
+  jumpToBottomButton.classList.remove("hidden");
+}
+
 function scrollLatestAssistantToTop() {
   const assistantMessages = chatContainer.querySelectorAll(".message-row.assistant");
   const latestAssistantMessage = assistantMessages[assistantMessages.length - 1];
@@ -384,6 +406,7 @@ function renderMessages(scrollMode = "bottom") {
     }
 
     chatContainer.appendChild(emptyStateFragment);
+    updateJumpToBottomVisibility();
     return;
   }
 
@@ -398,10 +421,12 @@ function renderMessages(scrollMode = "bottom") {
 
   if (scrollMode === "assistant-top") {
     scrollLatestAssistantToTop();
+    updateJumpToBottomVisibility();
     return;
   }
 
   scrollToBottom();
+  updateJumpToBottomVisibility();
 }
 
 function toggleQuickActions(forceOpen) {
@@ -1113,6 +1138,10 @@ clearChatButton.addEventListener("click", () => {
   textarea.focus();
 });
 
+jumpToBottomButton.addEventListener("click", () => {
+  scrollToBottomSmooth();
+});
+
 historyToggleButton.addEventListener("click", () => {
   openHistoryPanel();
 });
@@ -1256,6 +1285,7 @@ chatContainer.addEventListener("scroll", () => {
   }
 
   lastChatScrollTop = currentScrollTop;
+  updateJumpToBottomVisibility();
 });
 
 const defaultQuickActionButton = quickActionsMenu.querySelector(".quick-action-button.active");
@@ -1270,3 +1300,4 @@ loadPromptHistory();
 initializeTheme();
 autoResizeTextarea();
 renderMessages();
+updateJumpToBottomVisibility();
