@@ -540,11 +540,71 @@ body.dark .empty-state-detail {
   font-size: 0.88rem;
 }
 
+.code-run-button {
+  padding: 6px 12px;
+  font-size: 0.88rem;
+}
+
 .code-block pre {
   margin: 0;
   border-radius: 0;
   border: 0;
   background: transparent;
+}
+
+.code-runner-panel {
+  margin: 0;
+  border-top: 1px solid rgba(127, 127, 127, 0.16);
+  background: rgba(127, 127, 127, 0.06);
+}
+
+.code-runner-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 8px;
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.code-runner-status {
+  font-weight: 700;
+}
+
+.code-runner-elapsed {
+  font-weight: 600;
+}
+
+.code-runner-output {
+  margin: 0;
+  padding: 10px 12px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: transparent;
+  border-radius: 0;
+}
+
+.code-runner-preview {
+  padding: 0 12px 14px;
+}
+
+.code-runner-frame {
+  width: 100%;
+  min-height: 260px;
+  border: 1px solid rgba(127, 127, 127, 0.22);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+body.dark .code-runner-frame {
+  background: #0b1220;
 }
 
 .message-content code:not(pre code) {

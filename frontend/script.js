@@ -75,6 +75,9 @@ const CONVERSION_TARGETS = {
   shell: ["bash", "python", "javascript"]
 };
 let isLoading = false;
+let activeRequestController = null;
+let loadingStartedAt = 0;
+let loadingTimerId = null;
 let activeQuickAction = QUICK_ACTION_TALK;
 let lastChatScrollTop = 0;
 let pendingGeneratorPrompt = "";
@@ -92,6 +95,7 @@ marked.setOptions({
 const highlightCode = typeof window.hljs?.highlightElement === "function"
   ? (block) => window.hljs.highlightElement(block)
   : () => {};
+const SUPPORTED_RUN_LANGUAGES = new Set(["javascript", "js", "html"]);
 
 function isSmallScreen() {
   return window.matchMedia("(max-width: 720px)").matches;
@@ -100,8 +104,55 @@ function isSmallScreen() {
 function setLoadingState(loading) {
   isLoading = loading;
   textarea.disabled = loading;
-  submitButton.disabled = loading;
-  submitButton.textContent = loading ? "Thinking..." : "Send";
+  submitButton.disabled = false;
+
+  if (!loading) {
+    submitButton.textContent = "Send";
+    return;
+  }
+
+  submitButton.textContent = "Cancel (0s)";
+}
+
+function getLoadingElapsedSeconds() {
+  if (!loadingStartedAt) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor((Date.now() - loadingStartedAt) / 1000));
+}
+
+function startLoadingTimer() {
+  loadingStartedAt = Date.now();
+
+  if (loadingTimerId) {
+    window.clearInterval(loadingTimerId);
+  }
+
+  loadingTimerId = window.setInterval(() => {
+    if (!isLoading) {
+      return;
+    }
+
+    submitButton.textContent = `Cancel (${getLoadingElapsedSeconds()}s)`;
+  }, 1000);
+}
+
+function stopLoadingTimer() {
+  if (loadingTimerId) {
+    window.clearInterval(loadingTimerId);
+    loadingTimerId = null;
+  }
+
+  loadingStartedAt = 0;
+}
+
+function cancelActiveRequest() {
+  if (!isLoading || !activeRequestController) {
+    return;
+  }
+
+  activeRequestController.abort();
 }
 
 function autoResizeTextarea() {
@@ -174,6 +225,219 @@ function attachCopyBehavior(button, text) {
   });
 }
 
+function normalizeLanguageLabel(value) {
+  const normalized = (value || "").trim().toLowerCase();
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized === "node" || normalized === "nodejs" || normalized === "mjs" || normalized === "cjs") {
+    return "javascript";
+  }
+
+  return normalized;
+}
+
+function createRunPanel() {
+  const panel = document.createElement("div");
+  panel.className = "code-runner-panel hidden";
+
+  const meta = document.createElement("div");
+  meta.className = "code-runner-meta";
+
+  const status = document.createElement("span");
+  status.className = "code-runner-status";
+  status.textContent = "Ready";
+
+  const elapsed = document.createElement("span");
+  elapsed.className = "code-runner-elapsed";
+
+  const output = document.createElement("pre");
+  output.className = "code-runner-output";
+
+  const preview = document.createElement("div");
+  preview.className = "code-runner-preview hidden";
+
+  const frame = document.createElement("iframe");
+  frame.className = "code-runner-frame";
+  frame.setAttribute("title", "Code preview");
+  frame.setAttribute("sandbox", "allow-scripts");
+  preview.appendChild(frame);
+
+  meta.append(status, elapsed);
+  panel.append(meta, output, preview);
+
+  return { panel, status, elapsed, output, preview, frame };
+}
+
+function formatRunnerResult(value) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "undefined") {
+    return "undefined";
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch (error) {
+    return String(value);
+  }
+}
+
+function languageRunHelpText(language) {
+  if (!language) {
+    return "Run is available for JavaScript and HTML code blocks.";
+  }
+
+  return `Run is currently available for JavaScript and HTML only. \`${language}\` cannot run in this browser runner yet.`;
+}
+
+async function executeJavaScriptSnippet(code) {
+  return new Promise((resolve, reject) => {
+    const workerSource = `
+      const logs = [];
+      const pushLog = (kind, args) => {
+        logs.push([kind, ...args.map((item) => {
+          if (typeof item === "string") return item;
+          try { return JSON.stringify(item); } catch (_) { return String(item); }
+        })]);
+      };
+      console.log = (...args) => pushLog("log", args);
+      console.info = (...args) => pushLog("info", args);
+      console.warn = (...args) => pushLog("warn", args);
+      console.error = (...args) => pushLog("error", args);
+      self.onmessage = async (event) => {
+        const sourceCode = event.data || "";
+        try {
+          const result = await (async () => eval(sourceCode))();
+          self.postMessage({ ok: true, result, logs });
+        } catch (error) {
+          self.postMessage({ ok: false, error: error?.message || String(error), logs });
+        }
+      };
+    `;
+
+    const blob = new Blob([workerSource], { type: "application/javascript" });
+    const workerUrl = URL.createObjectURL(blob);
+    const worker = new Worker(workerUrl);
+    let finished = false;
+
+    const cleanup = () => {
+      worker.terminate();
+      URL.revokeObjectURL(workerUrl);
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      if (finished) {
+        return;
+      }
+
+      finished = true;
+      cleanup();
+      reject(new Error("Execution timed out after 5 seconds."));
+    }, 5000);
+
+    worker.onmessage = (event) => {
+      if (finished) {
+        return;
+      }
+
+      finished = true;
+      window.clearTimeout(timeoutId);
+      cleanup();
+      resolve(event.data || {});
+    };
+
+    worker.onerror = (event) => {
+      if (finished) {
+        return;
+      }
+
+      finished = true;
+      window.clearTimeout(timeoutId);
+      cleanup();
+      reject(new Error(event.message || "Worker execution failed."));
+    };
+
+    worker.postMessage(code);
+  });
+}
+
+async function runCodeSnippet(language, code, panelElements) {
+  const normalizedLanguage = normalizeLanguageLabel(language);
+  const {
+    panel,
+    status,
+    elapsed,
+    output,
+    preview,
+    frame
+  } = panelElements;
+  const startedAt = Date.now();
+
+  panel.classList.remove("hidden");
+  preview.classList.add("hidden");
+  frame.srcdoc = "";
+  output.classList.remove("hidden");
+  status.textContent = "Running...";
+  elapsed.textContent = "";
+  output.textContent = "";
+
+  if (!SUPPORTED_RUN_LANGUAGES.has(normalizedLanguage)) {
+    status.textContent = "Not Supported";
+    output.textContent = languageRunHelpText(normalizedLanguage);
+    return;
+  }
+
+  if (normalizedLanguage === "html") {
+    const duration = ((Date.now() - startedAt) / 1000).toFixed(2);
+    status.textContent = "Completed";
+    elapsed.textContent = `${duration}s`;
+    output.classList.add("hidden");
+    preview.classList.remove("hidden");
+    frame.srcdoc = code;
+    return;
+  }
+
+  try {
+    const result = await executeJavaScriptSnippet(code);
+    const duration = ((Date.now() - startedAt) / 1000).toFixed(2);
+    elapsed.textContent = `${duration}s`;
+
+    const logs = Array.isArray(result.logs)
+      ? result.logs.map((line) => `[${line[0]}] ${line.slice(1).join(" ")}`)
+      : [];
+
+    if (!result.ok) {
+      status.textContent = "Error";
+      output.textContent = [...logs, `Error: ${result.error || "Unknown error"}`].join("\n");
+      return;
+    }
+
+    status.textContent = "Completed";
+
+    const resultText = formatRunnerResult(result.result);
+    const chunks = [];
+
+    if (logs.length) {
+      chunks.push("Console output:");
+      chunks.push(logs.join("\n"));
+    }
+
+    chunks.push("Result:");
+    chunks.push(resultText);
+    output.textContent = chunks.join("\n\n");
+  } catch (error) {
+    const duration = ((Date.now() - startedAt) / 1000).toFixed(2);
+    elapsed.textContent = `${duration}s`;
+    status.textContent = "Error";
+    output.textContent = error.message || "Execution failed.";
+  }
+}
+
 function enhanceCodeBlocks(container) {
   container.querySelectorAll("pre").forEach((pre) => {
     const code = pre.querySelector("code");
@@ -203,9 +467,26 @@ function enhanceCodeBlocks(container) {
     copyButton.dataset.failedLabel = "Copy failed";
     attachCopyBehavior(copyButton, code.textContent || "");
 
-    toolbar.append(languageLabel, copyButton);
+    const runButton = document.createElement("button");
+    runButton.type = "button";
+    runButton.className = "copy-button code-run-button";
+    runButton.textContent = "Run";
+
+    const panelElements = createRunPanel();
+    const sourceCode = code.textContent || "";
+    const sourceLanguage = languageLabel.textContent || "";
+
+    runButton.addEventListener("click", async () => {
+      runButton.disabled = true;
+      runButton.textContent = "Running...";
+      await runCodeSnippet(sourceLanguage, sourceCode, panelElements);
+      runButton.disabled = false;
+      runButton.textContent = "Run";
+    });
+
+    toolbar.append(languageLabel, copyButton, runButton);
     pre.replaceWith(wrapper);
-    wrapper.append(toolbar, pre);
+    wrapper.append(toolbar, pre, panelElements.panel);
   });
 }
 
@@ -279,7 +560,7 @@ function getEmptyStateGuidance(actionLabel) {
   if (actionLabel === QUICK_ACTION_CONVERT) {
     return {
       mode: "Convert Language",
-      copy: "Choose a valid source language and target language, then paste your code. Mini AI Assistant will rewrite the logic in the target language while preserving the original behavior as closely as possible."
+      copy: "Choose a valid source language and target language, then paste your code. Mini AI Assistant will convert the code into the target language and return only the converted code."
     };
   }
 
@@ -596,7 +877,7 @@ function getQuickActionPlaceholder(actionLabel) {
 
   if (actionLabel === QUICK_ACTION_CONVERT) {
     return conversionSourceLanguage && conversionTargetLanguage
-      ? `Paste your ${conversionSourceLanguage.toUpperCase()} code here. Mini AI Assistant will convert it to ${conversionTargetLanguage.toUpperCase()}.`
+      ? `Paste your ${conversionSourceLanguage.toUpperCase()} code here. Mini AI Assistant will return converted ${conversionTargetLanguage.toUpperCase()} code only.`
       : "Choose a valid source and target language first, then paste the code you want to convert.";
   }
 
@@ -718,8 +999,8 @@ function createModePrompt(prompt) {
       `Target language: ${conversionTargetLanguage || "unknown"}.`,
       "Preserve the original behavior as closely as possible.",
       "Adjust syntax, standard libraries, and idioms for the target language.",
-      "Explain any unavoidable differences briefly.",
-      "Return the converted code in a single code block.",
+      "Return only the converted code in a single code block.",
+      "Do not include explanation, notes, summary, or markdown text outside the code block.",
       "",
       "Code:",
       "```",
@@ -817,34 +1098,45 @@ async function submitPrompt(prompt) {
   messages.push({ role: "assistant", content: "Thinking...", pending: true });
   renderMessages("bottom");
   setLoadingState(true);
+  startLoadingTimer();
   textarea.value = "";
   autoResizeTextarea();
 
   try {
-    const reply = await sendPrompt(finalPrompt);
+    activeRequestController = new AbortController();
+    const reply = await sendPrompt(finalPrompt, activeRequestController.signal);
     messages[messages.length - 1] = { role: "assistant", content: reply };
     addConversationToHistory(prompt, reply);
   } catch (error) {
-    const errorReply = `### Error\n\n${error.message}`;
+    const elapsedSeconds = getLoadingElapsedSeconds();
+    const errorReply = error.name === "AbortError"
+      ? `### Cancelled\n\nRequest cancelled after ${elapsedSeconds} second${elapsedSeconds === 1 ? "" : "s"}.`
+      : `### Error\n\n${error.message}`;
     messages[messages.length - 1] = {
       role: "assistant",
       content: errorReply
     };
-    addConversationToHistory(prompt, errorReply);
+
+    if (error.name !== "AbortError") {
+      addConversationToHistory(prompt, errorReply);
+    }
   } finally {
+    activeRequestController = null;
+    stopLoadingTimer();
     setLoadingState(false);
     renderMessages("assistant-top");
     textarea.focus();
   }
 }
 
-async function sendPrompt(prompt) {
+async function sendPrompt(prompt, signal) {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ prompt })
+    body: JSON.stringify({ prompt }),
+    signal
   });
 
   const payload = await response.json();
@@ -860,6 +1152,7 @@ async function handleSubmit(event) {
   event.preventDefault();
 
   if (isLoading) {
+    cancelActiveRequest();
     return;
   }
 
