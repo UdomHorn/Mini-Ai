@@ -384,7 +384,7 @@ body.dark .quick-action-button {
 
 /* In dark mode, keep the active button theme consistent with light mode. */
 body.dark .quick-action-button.active {
-  background: linear-gradient(135deg, #bf5a2a, #9f4318);
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   color: #fff7ed;
   border-color: transparent;
 }
