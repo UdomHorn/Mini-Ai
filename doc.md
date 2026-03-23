@@ -135,3 +135,37 @@
 
 65. save all the prompt that I used to asked in doc.md
 
+66. import { GiVintageRobot } from "react-icons/gi"; add this icon and change color match then thems color
+
+67. move input and send button to middle of the screen and when user put cursor inside the input area move it to bottom of the screen
+
+68. show the input area as normal but just move it to middle of the screen but when user input text move it to bottom of the screen
+
+69. ahhh , where the input area? how can user input text if u dont show the input area?
+
+70. it look ugly move to bottom as normal, show input area to bottom as before
+
+71. now shwo the detail text each state of the user, below Learn conding with mini  AI assistant, andd the text detail area. In text detail area generate the navigate text detail tell user useful text , to make it easier for user to use each button
+
+72. now make the detail text area for each button appear in all button option , make it clickable can scroll able. when user click that detail text area option make then can use like they click button option. note: that text area should be appear all change option.
+
+73. remove this recent change
+
+74. remvoe start chat and learn coding with mini ai assistant to make chat area look cleaner
+
+75. remove h1 title in header section and make the title mini ai assistant larger
+
+76. don't change p in title kepp it the same all button keep the word "Mini AI Assistant" each state button
+
+77. chat container hight a bit tall reduce a bit to improve ux design
+
+78. make the gap top and bottom chat container to equal I see gap top to header section a bit larger.
+
+79. in small screen, the placeholder text should redue their length. for mini ai assistant state make the place holder to "Ask any thing..."and other buton state to "Past your code here..."
+
+80. when user change button show tell user to know that they are in what mode "example user in talk mini ai assistant mode and the swich button to explain code mode show give user message tht they are in explain code mode", do this to all button when they switch button option.
+
+81. if user not yet use any mode when they switch option should show the text detail first .the alert message should show while user is using one mode and switch to another.
+
+82. save all the code that used to ask in doc.md
+
