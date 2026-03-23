@@ -1179,6 +1179,24 @@ quickActionsToggle.addEventListener("click", () => {
   toggleQuickActions();
 });
 
+document.addEventListener("click", (event) => {
+  const menuIsOpen = !quickActionsMenu.classList.contains("hidden");
+
+  if (!menuIsOpen) {
+    return;
+  }
+
+  if (event.target.closest("#quick-actions-toggle")) {
+    return;
+  }
+
+  if (event.target.closest(".quick-action-button")) {
+    return;
+  }
+
+  toggleQuickActions(false);
+});
+
 quickActionsMenu.addEventListener("click", (event) => {
   const actionButton = event.target.closest(".quick-action-button");
 
