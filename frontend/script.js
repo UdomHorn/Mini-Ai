@@ -994,8 +994,13 @@ quickActionsMenu.addEventListener("click", (event) => {
     return;
   }
 
+  const shouldAnnounceModeChange = messages.length > 0;
   setActiveQuickAction(actionButton);
-  appendAssistantNotice(`### Mode Changed\n\n${getModeSwitchMessage(activeQuickAction)}`);
+
+  if (shouldAnnounceModeChange) {
+    appendAssistantNotice(`### Mode Changed\n\n${getModeSwitchMessage(activeQuickAction)}`);
+  }
+
   textarea.value = "";
   autoResizeTextarea();
   textarea.focus();
