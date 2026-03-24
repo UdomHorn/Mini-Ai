@@ -31,6 +31,8 @@ app.get("/api/health", (req, res) => {
 
 app.post("/api/chat", async (req, res) => {
   const prompt = typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "";
+  const mode = typeof req.body?.mode === "string" ? req.body.mode.trim() : "";
+  const requestHistory = Array.isArray(req.body?.history) ? req.body.history : [];
 
   if (!prompt) {
     return res.status(400).json({ error: "Prompt is required." });
@@ -43,9 +45,35 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
+    const sanitizedHistory = requestHistory
+      .filter((entry) => {
+        if (!entry || typeof entry !== "object") {
+          return false;
+        }
+
+        const isValidRole = entry.role === "user" || entry.role === "assistant";
+        const content = typeof entry.content === "string" ? entry.content.trim() : "";
+        return isValidRole && Boolean(content);
+      })
+      .map((entry) => ({
+        role: entry.role,
+        content: entry.content.trim()
+      }))
+      .slice(-12);
+
+    const contents = mode === "Mini AI Assistant" && sanitizedHistory.length
+      ? [
+        ...sanitizedHistory.map((entry) => ({
+          role: entry.role === "assistant" ? "model" : "user",
+          parts: [{ text: entry.content }]
+        })),
+        { role: "user", parts: [{ text: prompt }] }
+      ]
+      : prompt;
+
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: prompt
+      contents
     });
 
     const text = typeof response.text === "string" ? response.text.trim() : "";

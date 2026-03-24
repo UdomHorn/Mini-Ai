@@ -36,6 +36,8 @@ const QUICK_ACTION_OPTIMIZE = "Optimize Code";
 const QUICK_ACTION_REFACTOR = "Refactor Code";
 const QUICK_ACTION_CONVERT = "Convert Language";
 const QUICK_ACTION_GENERATOR = "Code Generator";
+const MAX_API_MEMORY_MESSAGES = 12;
+const MAX_API_MEMORY_CHARS = 8000;
 const CODE_LANGUAGES = [
   "javascript",
   "typescript",
@@ -747,7 +749,7 @@ function getModeSwitchMessage(actionLabel) {
 function getQuickActionPlaceholder(actionLabel) {
   if (isSmallScreen()) {
     return actionLabel === QUICK_ACTION_TALK
-      ? "Ask anything..."
+      ? "Ask about your project idea..."
       : "Paste your code here...";
   }
 
@@ -773,7 +775,7 @@ function getQuickActionPlaceholder(actionLabel) {
     return "Describe what you want to build, key features, and requirements. Output will be clean code with explanation outside the code block.";
   }
 
-  return "Ask about your idea, bug, feature, code problem, or next step.";
+  return "Ask about your project idea, features, bugs, implementation, or next step.";
 }
 
 function looksLikeCode(value) {
@@ -932,11 +934,19 @@ function createModePrompt(prompt) {
     ].join("\n");
   }
 
-  return prompt;
+  return [
+    "You are Mini AI Assistant for software project building.",
+    "Keep answers directly related to the user's project idea and current build context.",
+    "Prioritize practical output: feature breakdowns, architecture choices, implementation steps, debugging fixes, and clear next actions.",
+    "If the user asks something broad, connect it back to their project use case.",
+    "When requirements are unclear, ask short clarifying questions before deep implementation.",
+    "",
+    `User request: ${prompt}`
+  ].join("\n");
 }
 
 function appendAssistantNotice(content) {
-  messages.push({ role: "assistant", content });
+  messages.push({ role: "assistant", content, localNotice: true });
   renderMessages("assistant-top");
 }
 
@@ -987,6 +997,7 @@ function setActiveQuickAction(activeButton) {
 }
 
 async function submitPrompt(prompt) {
+  const memoryHistory = buildApiMemoryHistory();
   const finalPrompt = createModePrompt(prompt);
 
   messages.push({ role: "user", content: prompt });
@@ -999,7 +1010,7 @@ async function submitPrompt(prompt) {
 
   try {
     activeRequestController = new AbortController();
-    const reply = await sendPrompt(finalPrompt, activeRequestController.signal);
+    const reply = await sendPrompt(finalPrompt, activeRequestController.signal, memoryHistory);
     messages[messages.length - 1] = { role: "assistant", content: reply };
     addConversationToHistory(prompt, reply);
   } catch (error) {
@@ -1024,13 +1035,51 @@ async function submitPrompt(prompt) {
   }
 }
 
-async function sendPrompt(prompt, signal) {
+function buildApiMemoryHistory() {
+  if (activeQuickAction !== QUICK_ACTION_TALK) {
+    return [];
+  }
+
+  const history = messages
+    .filter((message) => {
+      if (message.pending || message.localNotice) {
+        return false;
+      }
+
+      if (message.role !== "user" && message.role !== "assistant") {
+        return false;
+      }
+
+      const content = typeof message.content === "string" ? message.content.trim() : "";
+      return content.length > 0;
+    })
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim()
+    }));
+
+  const recentHistory = history.slice(-MAX_API_MEMORY_MESSAGES);
+  let totalChars = recentHistory.reduce((total, item) => total + item.content.length, 0);
+
+  while (recentHistory.length > 0 && totalChars > MAX_API_MEMORY_CHARS) {
+    const removed = recentHistory.shift();
+    totalChars -= removed?.content?.length || 0;
+  }
+
+  return recentHistory;
+}
+
+async function sendPrompt(prompt, signal, history = []) {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({
+      prompt,
+      mode: activeQuickAction,
+      history
+    }),
     signal
   });
 
