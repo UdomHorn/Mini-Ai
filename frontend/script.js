@@ -908,12 +908,13 @@ function createModePrompt(prompt) {
   if (activeQuickAction === QUICK_ACTION_GENERATOR) {
     const requestedLanguage = detectRequestedLanguage(prompt)
       || selectedGeneratorLanguage
-      || "the best technology if the user did not specify one";
+      || "HTML, CSS, and JavaScript";
 
     return [
       "You are in Code Generator mode.",
       "First analyze the problem carefully.",
-      `Use ${requestedLanguage}. If the user did not specify a language, choose the best technology for the problem.`,
+      `Use ${requestedLanguage}.`,
+      "If the user did not specify a language, prioritize HTML, CSS, and JavaScript first.",
       "Write clean, modular, and maintainable code.",
       "Include error handling and validation where appropriate.",
       "Do not add comments inside the code.",
@@ -934,15 +935,15 @@ function createModePrompt(prompt) {
     ].join("\n");
   }
 
-  return [
-    "You are Mini AI Assistant for software project building.",
-    "Keep answers directly related to the user's project idea and current build context.",
-    "Prioritize practical output: feature breakdowns, architecture choices, implementation steps, debugging fixes, and clear next actions.",
-    "If the user asks something broad, connect it back to their project use case.",
-    "When requirements are unclear, ask short clarifying questions before deep implementation.",
-    "",
-    `User request: ${prompt}`
-  ].join("\n");
+  if (!detectRequestedLanguage(prompt) && looksLikeCodeGenerationRequest(prompt)) {
+    return [
+      prompt,
+      "",
+      "If language is not specified, prioritize HTML, CSS, and JavaScript."
+    ].join("\n");
+  }
+
+  return prompt;
 }
 
 function appendAssistantNotice(content) {
@@ -957,6 +958,21 @@ function appendModeNotice(title, message) {
 function detectRequestedLanguage(prompt) {
   const normalizedPrompt = prompt.toLowerCase();
   return CODE_LANGUAGES.find((language) => normalizedPrompt.includes(language)) || "";
+}
+
+function looksLikeCodeGenerationRequest(prompt) {
+  const normalizedPrompt = prompt.toLowerCase();
+  const signals = [
+    "generate code",
+    "write code",
+    "create code",
+    "build code",
+    "make code",
+    "coding",
+    "develop"
+  ];
+
+  return signals.some((signal) => normalizedPrompt.includes(signal));
 }
 
 function setActiveQuickAction(activeButton) {
